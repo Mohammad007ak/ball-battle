@@ -5,7 +5,7 @@ Real-time mobile PvP game: every character is a bouncing ball; players tap to bo
 ## Source of truth
 - `prototype/ball-battle.html` — complete single-file playable prototype. **It is the reference for game feel, visuals, animation timing, audio and every number.** When unsure how something should look or behave, read the matching function there and port it faithfully. Do not "improve" game design silently.
 - `docs/GDD.md` — game design document (Persian). Rules, modes, economy, content tables.
-- `docs/gamedata.json` — machine-readable numbers extracted from the prototype (characters, abilities, chests, skins, leagues, constants).
+- `docs/gamedata.json` — machine-readable numbers extracted from the prototype (characters, abilities, chests, skins, leagues, constants). The live copy is `packages/content/src/gamedata.json` (+ `engine.json` for engine rules and per-ability numbers); keep both in sync.
 - `docs/PROMPTS.md` — the phased build plan. Work one phase at a time.
 
 ### Where things live in the prototype
@@ -65,6 +65,6 @@ pnpm test           # Vitest, all packages
 pnpm typecheck      # tsc -b (project references)
 pnpm lint           # ESLint (engine purity rules included)
 pnpm format         # Prettier
-pnpm sim            # (Phase 2) balance simulator
+pnpm sim            # balance simulator (fast sample); --full = all 22,680 rounds, --check = fail outside 45–55%, --tune N = auto-tuner passes (writes tools/sim/out/)
 ```
 Android build commands are added in Phase 6.

@@ -1,3 +1,5 @@
 prototype/
 pnpm-lock.yaml
 dist/
+docs/
+CLAUDE.md

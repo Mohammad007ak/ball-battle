@@ -8,5 +8,11 @@
   "dependencies": {
     "@chakachak/content": "workspace:*",
     "@chakachak/engine": "workspace:*"
+  },
+  "scripts": {
+    "start": "tsx src/cli.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.15"
   }
 }

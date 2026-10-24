@@ -8,3 +8,11 @@ describe('content', () => {
     for (const c of classes) expect(c.ab).toHaveLength(3);
   });
 });
+
+describe('engine data', () => {
+  it('has params for every ability', async () => {
+    const { defaultEngineData, CLASS_KEYS } = await import('./index');
+    for (const k of CLASS_KEYS)
+      for (let i = 0; i < 3; i++) expect(defaultEngineData.abilities).toHaveProperty(k + i);
+  });
+});
