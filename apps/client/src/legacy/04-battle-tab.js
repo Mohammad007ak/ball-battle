@@ -87,7 +87,7 @@ function openGear(){
 /* ---------- account (Clash Royale style: guest by default, phone link offered here) ---------- */
 let acctPhone='',acctStep='phone',delArm=0;
 function acctHTML(){
-  const A=CK.BK.account;if(!A)return '';
+  const A=CK.BK.account;if(!A||(!A.linked()&&!A.phoneEnabled()))return '';
   const head='<div class="ptitle"><span class="tx">حساب</span></div>';
   if(A.linked())return head+`<div class="acct"><small>پیشرفتت با شمارهٔ موبایل ذخیره شده و روی هر گوشی برمی‌گردد.</small><div class="tbtns"><button class="b3d" data-acct="delete">حذف حساب</button></div></div>`;
   if(acctStep==='code')return head+`<div class="acct"><small>کد ۵ رقمی پیامک‌شده به ${acctPhone} را وارد کن</small><input class="phin" id="acctIn" inputmode="numeric" maxlength="5" autocomplete="one-time-code"><div class="tbtns"><button class="b3d" data-acct="verify">تأیید</button><button class="b3d" data-acct="back">تغییر شماره</button></div></div>`;

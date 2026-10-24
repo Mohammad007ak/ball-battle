@@ -1,10 +1,13 @@
 /** SMS sender behind an interface so the Iranian provider can be swapped (or faked in tests). */
 export interface SmsProvider {
+  /** Codes reach the player's phone (false: only printed to the log). */
+  readonly real: boolean;
   sendOtp(phone: string, code: string): Promise<void>;
 }
 
 /** Development/test provider: prints the code to the server log. */
 export class ConsoleSms implements SmsProvider {
+  readonly real = false;
   sent: { phone: string; code: string }[] = [];
   async sendOtp(phone: string, code: string) {
     this.sent.push({ phone, code });
@@ -14,6 +17,7 @@ export class ConsoleSms implements SmsProvider {
 
 /** Kavenegar "verify lookup" (template-based OTP). Configure KAVENEGAR_KEY and KAVENEGAR_TEMPLATE. */
 export class KavenegarSms implements SmsProvider {
+  readonly real = true;
   constructor(
     private key: string,
     private template: string,

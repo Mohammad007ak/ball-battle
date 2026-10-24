@@ -24,6 +24,7 @@ export class HttpBackend implements Backend, AccountApi {
   private offset = 0;
   private day = 0;
   private isLinked = false;
+  private phone = false;
   private token_: string | null = null;
 
   constructor(private base: string) {}
@@ -40,7 +41,9 @@ export class HttpBackend implements Backend, AccountApi {
       }
     }
     if (!this.token_) this.apply(await this.req<Me>('POST', '/v1/auth/guest'));
-    return (await this.req<{ balance: Balance }>('GET', '/v1/config')).balance;
+    const cfg = await this.req<{ balance: Balance; phoneLogin?: boolean }>('GET', '/v1/config');
+    this.phone = !!cfg.phoneLogin;
+    return cfg.balance;
   }
 
   profile(): Profile {
@@ -64,6 +67,9 @@ export class HttpBackend implements Backend, AccountApi {
   async refresh() {
     this.apply(await this.req<Me>('GET', '/v1/me'));
   }
+  phoneEnabled(): boolean {
+    return this.phone;
+  }
   linked(): boolean {
     return this.isLinked;
   }
@@ -73,12 +79,16 @@ export class HttpBackend implements Backend, AccountApi {
     const idem = crypto.randomUUID();
     for (let attempt = 0; ; attempt++) {
       try {
-        const r = await this.req<ActResult & { profile: Profile; now: number }>('POST', '/v1/act', { action: a, idem });
+        const r = await this.req<ActResult & { profile: Profile; now: number }>('POST', '/v1/act', {
+          action: a,
+          idem,
+        });
         this.S = r.profile;
         this.offset = r.now - Date.now();
         return r.ok ? (r.data === undefined ? { ok: true } : { ok: true, data: r.data }) : r;
       } catch (e) {
-        if (attempt >= 2 || (e as Error).message === 'unauthorized') return { ok: false, code: 'network' };
+        if (attempt >= 2 || (e as Error).message === 'unauthorized')
+          return { ok: false, code: 'network' };
         await new Promise((res) => setTimeout(res, 800 * (attempt + 1)));
       }
     }

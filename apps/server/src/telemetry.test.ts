@@ -29,6 +29,15 @@ function setup() {
 }
 
 describe('telemetry', () => {
+  it('hides phone login when no SMS provider is configured', async () => {
+    const { app } = buildApp({
+      db: openDb(':memory:'),
+      sms: new ConsoleSms(),
+      secret: 'x'.repeat(32),
+    });
+    expect((await app.inject({ method: 'GET', url: '/v1/config' })).json().phoneLogin).toBe(false);
+  });
+
   it('stores validated event batches for logged-in players only', async () => {
     const s = setup(),
       tok = await s.guest();

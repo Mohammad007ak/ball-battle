@@ -30,6 +30,8 @@ export type ActResult =
 /** Optional account linking (Clash Royale style: play as guest, save progress with a phone). */
 export interface AccountApi {
   linked(): boolean;
+  /** The server can send login codes (otherwise the phone option is hidden). */
+  phoneEnabled(): boolean;
   requestOtp(phone: string): Promise<ActResult>;
   verify(phone: string, code: string): Promise<ActResult>;
   deleteAccount(): Promise<ActResult>;

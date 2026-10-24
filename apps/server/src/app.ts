@@ -87,7 +87,13 @@ export function buildApp(o: AppOptions) {
     if (req.method === 'OPTIONS') return reply.code(204).send();
   });
   app.get('/health', async () => ({ ok: true }));
-  app.get('/v1/config', async () => ({ version: c.config.version, balance: c.config.get() }));
+  // Phone linking is offered only when codes can actually be delivered (a real SMS provider).
+  const phoneLogin = c.sms.real || !!c.testOtp;
+  app.get('/v1/config', async () => ({
+    version: c.config.version,
+    balance: c.config.get(),
+    phoneLogin,
+  }));
   app.post('/v1/auth/otp', async (req) => {
     await requestOtp(c, parse(OtpRequestSchema, req.body).phone, req.ip);
     return { ok: true };
