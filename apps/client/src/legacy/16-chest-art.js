@@ -17,7 +17,7 @@ function gemShape(c,x,y,r,col){c.save();c.shadowColor=col;c.shadowBlur=r*1.6;c.f
 function drawChest(c,x,y,s,tier,o){
   o=o||{};
   const art=artImg(o.open>0.35?`chest-${tier}-open`:`chest-${tier}`);
-  if(art){const bot=y+s*0.3,D=s*1.18;c.save();c.fillStyle='rgba(0,0,0,.38)';c.beginPath();c.ellipse(x,bot+s*0.015,s*0.5,s*0.06,0,0,TAU);c.fill();
+  if(art){const base=artImg(`chest-${tier}`)||art,bot=y+s*0.3,D=s*1.18*art.width/base.width;c.save();c.fillStyle='rgba(0,0,0,.38)';c.beginPath();c.ellipse(x,bot+s*0.015,s*0.5,s*0.06,0,0,TAU);c.fill();
     c.drawImage(art,x-D/2,bot-D*0.86,D,D);c.restore();return}
   const P=CHEST_PAL[tier],open=o.open||0,w=s,bh=s*0.38,lh=s*0.3,bx=x-w/2,bot=y+s*0.3,top=bot-bh,rad=s*0.05,lw=Math.max(1,s*0.016);
   const cbw=w*0.1,cbx=[bx+w*0.07,bx+w*0.93-cbw];

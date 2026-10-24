@@ -76,37 +76,39 @@ def trim(im: Image.Image) -> Image.Image:
     return im.crop(box) if box else im
 
 
-def fit(im: Image.Image, size: int) -> Image.Image:
-    """Center on a transparent square canvas, scaled to fit."""
-    s = size / max(im.size)
-    im = im.resize((max(1, round(im.width * s)), max(1, round(im.height * s))), Image.LANCZOS)
+def fit(im: Image.Image) -> Image.Image:
+    """Center on a transparent square canvas at the item's native resolution (never rescaled)."""
+    size = max(im.size)
     c = Image.new('RGBA', (size, size))
     c.paste(im, ((size - im.width) // 2, (size - im.height) // 2), im)
     return c
 
 
-def save(im, name, q=88):
-    im.save(OUT / name, 'WEBP', quality=q, method=6)
+def save(im, name, q=None):
+    """Lossless WebP by default (sprites); photos-like backgrounds pass a high lossy quality."""
+    if q is None:
+        im.save(OUT / name, 'WEBP', lossless=True, quality=100, method=6)
+    else:
+        im.save(OUT / name, 'WEBP', quality=q, method=6)
     print(name, im.size)
 
 
 closed = split(remove_white(Image.open(SRC / 'chests-closed.png')))
 opened = split(remove_white(Image.open(SRC / 'chests-open.png')))
 assert len(closed) == 5 and len(opened) == 5, (len(closed), len(opened))
-# one shared scale per sheet so chest sizes stay comparable
 for i, (c, o) in enumerate(zip(closed, opened)):
-    save(fit(c, 320), f'chest-{i}.webp')
-    save(fit(o, 320), f'chest-{i}-open.webp')
+    save(fit(c), f'chest-{i}.webp')
+    save(fit(o), f'chest-{i}-open.webp')
 
 icons = split(remove_white(Image.open(SRC / 'icons.png')))
 assert len(icons) == 9, len(icons)
 names = ['league-0', 'league-1', 'league-2', 'league-3', 'league-4', 'coin', 'gem', 'trophy', 'gem-bag']
 for im, n in zip(icons, names):
-    save(fit(im, 256), n + '.webp')
+    save(fit(im), n + '.webp')
 
 for f in sorted(SRC.glob('arena-*.png')):
     idx = int(f.stem.split('-')[1]) - 1
-    save(Image.open(f).convert('RGB').resize((1024, 1024), Image.LANCZOS), f'arena-{idx}.webp', 84)
+    save(Image.open(f).convert('RGB'), f'arena-{idx}.webp', 95)
 
-save(Image.open(SRC / 'menu-bg.png').convert('RGB'), 'menu-bg.webp', 80)
-save(Image.open(SRC / 'splash.png').convert('RGB'), 'splash.webp', 82)
+save(Image.open(SRC / 'menu-bg.png').convert('RGB'), 'menu-bg.webp', 95)
+save(Image.open(SRC / 'splash.png').convert('RGB'), 'splash.webp', 95)
