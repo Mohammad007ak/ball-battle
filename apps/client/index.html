@@ -3,10 +3,338 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0c1d4f" />
+    <link rel="icon" type="image/png" href="/icon-192.png" />
     <title>چکاچک</title>
   </head>
   <body>
-    <div id="app"></div>
+    <div class="app" dir="rtl">
+      <section id="battle" class="screen">
+        <header class="topbar">
+          <div class="lbadge" id="leagueBadge">
+            <svg viewBox="0 0 40 46" aria-hidden="true">
+              <path
+                d="M20 2 37 8 35 28C33 37 26 42 20 44 14 42 7 37 5 28L3 8Z"
+                fill="var(--lc)"
+                stroke="#071233"
+                stroke-width="3"
+                stroke-linejoin="round"
+              />
+              <path d="M20 8 31 12 30 27C28 33 24 36 20 38Z" fill="rgba(255,255,255,.28)" /></svg
+            ><b id="trophies" class="num"></b><span id="leagueName" hidden></span>
+          </div>
+          <div class="wallet">
+            <div class="res"><span class="coin-ico"></span><b id="coins" class="num"></b></div>
+            <div class="res gem">
+              <svg class="gm" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M7 3h10l4 6-9 12L3 9Z"
+                  fill="#34d399"
+                  stroke="#064e3b"
+                  stroke-width="1.6"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M3 9h18M7 3l2 6 3 12M17 3l-2 6-3 12"
+                  fill="none"
+                  stroke="#064e3b"
+                  stroke-width="1"
+                  opacity=".55"
+                />
+                <path d="M8 4h4l-2 4Z" fill="#d1fae5" /></svg
+              ><b id="gems" class="num"></b>
+            </div>
+          </div>
+          <button class="gear" data-gear aria-label="تنظیمات">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="3.2" />
+              <path
+                d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"
+              />
+            </svg>
+          </button>
+        </header>
+        <div class="hero">
+          <canvas id="arenaCv" aria-label="آرنا و تیم نبرد"></canvas>
+          <div class="ribbon"><small id="arenaNo"></small><b id="arenaName" class="tx"></b></div>
+          <div class="teamhit" id="teamHit"></div>
+        </div>
+        <div class="troad">
+          <svg class="tro" viewBox="0 0 40 40" aria-hidden="true">
+            <path
+              d="M11 5h18v9a9 9 0 0 1-18 0Z"
+              fill="#ffc53d"
+              stroke="#6b3a00"
+              stroke-width="2.5"
+            />
+            <path
+              d="M11 8H5c0 6 3 9 7 9M29 8h6c0 6-3 9-7 9"
+              fill="none"
+              stroke="#6b3a00"
+              stroke-width="2.5"
+            />
+            <path
+              d="M17 23h6v6h-6zM12 30h16v5H12z"
+              fill="#ffb300"
+              stroke="#6b3a00"
+              stroke-width="2.5"
+              stroke-linejoin="round"
+            />
+            <path d="M15 8v6" stroke="#fff6c8" stroke-width="2.5" stroke-linecap="round" />
+          </svg>
+          <div class="tbar"><i id="ladderFill"></i><b id="ladderText" class="tx"></b></div>
+          <img class="nexta" id="nextArena" alt="" />
+        </div>
+        <div class="modes" id="modes">
+          <button data-mode="1v1">۱ در ۱</button><button data-mode="2v2">۲ در ۲</button>
+        </div>
+        <button class="bigbtn tx" id="fightBtn">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#fff"
+            stroke-width="2.4"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M14.5 17.5 3 6V3h3l11.5 11.5" />
+            <path d="m13 19 6-6" />
+            <path d="m16 16 4 4" />
+            <path d="m19 21 2-2" />
+            <path d="M14.5 6.5 18 3h3v3l-3.5 3.5" />
+            <path d="m5 14 4 4" />
+            <path d="m7 17-3 3" />
+            <path d="m3 19 2 2" /></svg
+          >نبرد
+        </button>
+        <div class="tray" id="slots"></div>
+      </section>
+
+      <section id="cards" class="screen" hidden>
+        <header class="topbar">
+          <div class="wallet">
+            <div class="res"><span class="coin-ico"></span><b id="coins2" class="num"></b></div>
+            <div class="res gem">
+              <svg class="gm" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M7 3h10l4 6-9 12L3 9Z"
+                  fill="#34d399"
+                  stroke="#064e3b"
+                  stroke-width="1.6"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M3 9h18M7 3l2 6 3 12M17 3l-2 6-3 12"
+                  fill="none"
+                  stroke="#064e3b"
+                  stroke-width="1"
+                  opacity=".55"
+                />
+                <path d="M8 4h4l-2 4Z" fill="#d1fae5" /></svg
+              ><b id="gems2" class="num"></b>
+            </div>
+          </div>
+          <button class="gear" data-gear aria-label="تنظیمات">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="3.2" />
+              <path
+                d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"
+              />
+            </svg>
+          </button>
+        </header>
+        <div class="seg" id="seg">
+          <button data-seg="deck" aria-pressed="true">کارت‌ها</button
+          ><button data-seg="shop" aria-pressed="false">فروشگاه</button>
+        </div>
+        <div id="deckView" class="screen">
+          <div class="gpanel">
+            <div class="ptitle tx">تیم نبرد</div>
+            <div class="deckrow" id="deckRow"></div>
+          </div>
+          <div class="gpanel">
+            <div class="ptitle"><span class="tx">مجموعه</span><small id="collCount"></small></div>
+            <div class="cgrid" id="grid"></div>
+          </div>
+        </div>
+        <div id="shopView" class="screen" hidden>
+          <div class="gpanel">
+            <div class="ptitle"><span class="tx">پیشنهاد روز</span><small id="dailyT"></small></div>
+            <div class="daily" id="daily"></div>
+          </div>
+          <div class="gpanel">
+            <div class="ptitle tx">صندوقچه‌ها</div>
+            <div class="shopgrid" id="shopgrid"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="match" hidden>
+        <div class="hud">
+          <div class="side me">
+            <div class="nm"><b>تو</b><small id="meCls"></small></div>
+            <div class="bar"><i class="ghostbar" id="meGhost"></i><i id="meHp"></i></div>
+            <small id="meHpT"></small>
+            <div class="roster" id="meRoster"></div>
+          </div>
+          <div class="mid">
+            <div class="clock" id="clock">۶۰</div>
+            <div class="score" id="score"></div>
+            <small id="roundNo"></small>
+          </div>
+          <div class="side foe">
+            <div class="nm">
+              <span class="tag">ربات</span><small id="foeCls"></small><b id="foeName"></b>
+            </div>
+            <div class="bar"><i class="ghostbar" id="foeGhost"></i><i id="foeHp"></i></div>
+            <small id="foeHpT"></small>
+            <div class="roster" id="foeRoster"></div>
+          </div>
+        </div>
+        <div class="arena-wrap">
+          <canvas
+            id="cv"
+            aria-label="زمین مبارزه؛ روی زمین بزن تا توپت به آن سمت شتاب بگیرد"
+          ></canvas>
+          <div class="ov" id="ov" hidden></div>
+          <div class="emopanel" id="emoPanel" hidden></div>
+          <button class="finbtn" id="finBtn" hidden aria-label="فینیشر">
+            <span class="fring"></span
+            ><svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 2.5c-5 0-8.5 3.4-8.5 8 0 2.7 1.3 4.6 3 5.7V19a1.5 1.5 0 0 0 1.5 1.5h1v-2h1.5v2h3v-2H15v2h1a1.5 1.5 0 0 0 1.5-1.5v-2.8c1.7-1.1 3-3 3-5.7 0-4.6-3.5-8-8.5-8Z"
+                fill="#fff7ed"
+                stroke="#1a0505"
+                stroke-width="1.6"
+              />
+              <circle cx="8.6" cy="11" r="2.3" fill="#1a0505" />
+              <circle cx="15.4" cy="11" r="2.3" fill="#1a0505" />
+              <path d="m12 13.4-1.3 2.4h2.6Z" fill="#1a0505" /></svg
+            ><b>فینیشر</b>
+          </button>
+          <div class="mm" id="mm" hidden></div>
+        </div>
+        <div class="nudge">
+          <svg class="bolt" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M13 2 4 14h7l-1 8 9-12h-7Z"
+              fill="#ffd75e"
+              stroke="#6b3a00"
+              stroke-width="1.6"
+              stroke-linejoin="round"
+            /></svg
+          ><span class="pips" id="pips"
+            ><i class="pip"></i><i class="pip"></i><i class="pip"></i
+          ></span>
+        </div>
+        <div class="controls">
+          <button id="abilityBtn" class="ability">
+            <span class="ab-name" id="abName"></span><span class="ab-cd" id="abCd"></span>
+          </button>
+          <button id="emoBtn" aria-label="ایموت">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="9.5" fill="#ffd75e" stroke="#6b3a00" stroke-width="1.8" />
+              <circle cx="8.8" cy="10" r="1.4" fill="#2a1606" />
+              <circle cx="15.2" cy="10" r="1.4" fill="#2a1606" />
+              <path d="M7.5 14a5 5 0 0 0 9 0Z" fill="#2a1606" />
+            </svg>
+          </button>
+          <button id="quitBtn" aria-label="تسلیم">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M5 21V4M5 4h11l-2 4 2 4H5"
+                fill="#fff"
+                stroke="#fff"
+                stroke-width="2.4"
+                stroke-linejoin="round"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </section>
+
+      <div class="result" id="result" hidden>
+        <div class="rcard">
+          <h2 id="rTitle"></h2>
+          <small id="rSub"></small>
+          <div class="rchest" id="rChest"></div>
+          <div class="deltas">
+            <div><small>نتیجه</small><b id="rScore"></b></div>
+            <div><small>جام</small><b id="rTroph"></b></div>
+          </div>
+          <p class="promo" id="rPromo" hidden></p>
+          <div class="row2">
+            <button class="fight" id="againBtn" style="font-size: 22px; padding: 10px">
+              دوباره</button
+            ><button class="ghost" id="homeBtn">خانه</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="tabs" id="tabs" dir="rtl" aria-label="بخش‌های بازی">
+      <div class="tabs-in">
+        <button class="tab" data-tab="battle" aria-current="page">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M14.5 17.5 3 6V3h3l11.5 11.5" />
+            <path d="m13 19 6-6" />
+            <path d="m16 16 4 4" />
+            <path d="m19 21 2-2" />
+            <path d="M14.5 6.5 18 3h3v3l-3.5 3.5" />
+            <path d="m5 14 4 4" />
+            <path d="m7 17-3 3" />
+            <path d="m3 19 2 2" /></svg
+          ><span>نبرد</span><i class="badge" id="tabBadge" hidden></i>
+        </button>
+        <button class="tab" data-tab="cards" aria-current="false">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <rect x="3" y="5" width="11" height="15" rx="2" transform="rotate(-8 8.5 12.5)" />
+            <rect x="10" y="4" width="11" height="15" rx="2" transform="rotate(8 15.5 11.5)" /></svg
+          ><span>کارت‌ها</span>
+        </button>
+      </div>
+    </nav>
+    <div class="cmodal" id="cmodal" hidden>
+      <canvas id="chCv" aria-label="باز شدن صندوقچه"></canvas
+      ><button class="skip" id="chSkip">رد شدن</button>
+      <div class="chhint" id="chHint" hidden></div>
+      <div class="cbox" id="cbox" hidden></div>
+    </div>
+    <div class="modal" id="cardModal" hidden><div class="mbox" id="cardBox"></div></div>
+    <div class="sheet" id="sheet" hidden><div class="sheet-in" id="sheetIn"></div></div>
+    <div class="toast" id="toast" role="status" hidden></div>
+
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

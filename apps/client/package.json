@@ -9,7 +9,9 @@
     "@chakachak/content": "workspace:*",
     "@chakachak/economy": "workspace:*",
     "@chakachak/engine": "workspace:*",
-    "@chakachak/protocol": "workspace:*"
+    "@chakachak/protocol": "workspace:*",
+    "@fontsource/lalezar": "^5.3.0",
+    "@fontsource/vazirmatn": "^5.3.0"
   },
   "scripts": {
     "dev": "vite",
@@ -17,6 +19,7 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@types/node": "^26.6.5",
     "vite": "^8.3.5"
   }
 }
