@@ -1,0 +1,15 @@
+{
+  "name": "@chakachak/loadtest",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@chakachak/content": "workspace:*",
+    "@chakachak/engine": "workspace:*",
+    "@chakachak/economy": "workspace:*",
+    "@chakachak/server": "workspace:*"
+  }
+}

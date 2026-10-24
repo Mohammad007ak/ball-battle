@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { buildApp } from './app';
 import { backup } from './backup';
 import { openDb } from './db';
+import { attachOnline } from './online/ws';
 import { ConsoleSms, KavenegarSms } from './sms';
 
 /** Configuration comes from the environment (Hamravesh app settings). See docs/DEPLOY.md. */
@@ -17,13 +18,14 @@ const sms =
     : new ConsoleSms();
 const dev = env.DEV_TOOLS === '1';
 const db = openDb(join(dataDir, 'chakachak.db'));
-const { app } = buildApp({
+const { app, ctx } = buildApp({
   db,
   sms,
   secret,
   dev,
   ...(env.SMS_PROVIDER !== 'kavenegar' && env.TEST_OTP ? { testOtp: env.TEST_OTP } : {}),
 });
+attachOnline(ctx, app.server);
 await app.listen({ host: '0.0.0.0', port: Number(env.PORT ?? 8080) });
 console.log(
   `chakachak server on :${env.PORT ?? 8080} (data: ${dataDir}, sms: ${env.SMS_PROVIDER ?? 'console'})`,

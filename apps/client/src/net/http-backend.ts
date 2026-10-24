@@ -24,22 +24,22 @@ export class HttpBackend implements Backend, AccountApi {
   private offset = 0;
   private day = 0;
   private isLinked = false;
-  private token: string | null = null;
+  private token_: string | null = null;
 
   constructor(private base: string) {}
 
   /** Log in (or create a guest), then load the remote balance and the profile. */
   async init(): Promise<Balance> {
-    this.token = localStorage.getItem(TOKEN);
-    if (this.token) {
+    this.token_ = localStorage.getItem(TOKEN);
+    if (this.token_) {
       try {
         this.apply(await this.req<Me>('GET', '/v1/me'));
       } catch (e) {
         if ((e as Error).message !== 'unauthorized') throw e;
-        this.token = null;
+        this.token_ = null;
       }
     }
-    if (!this.token) this.apply(await this.req<Me>('POST', '/v1/auth/guest'));
+    if (!this.token_) this.apply(await this.req<Me>('POST', '/v1/auth/guest'));
     return (await this.req<{ balance: Balance }>('GET', '/v1/config')).balance;
   }
 
@@ -51,6 +51,18 @@ export class HttpBackend implements Backend, AccountApi {
   }
   dayKey(): number {
     return this.day;
+  }
+  onlineUrl(): string {
+    return this.base.replace(/^http/, 'ws') + '/v1/ws';
+  }
+  token(): string | null {
+    return this.token_;
+  }
+  setProfile(p: Profile) {
+    this.S = p;
+  }
+  async refresh() {
+    this.apply(await this.req<Me>('GET', '/v1/me'));
   }
   linked(): boolean {
     return this.isLinked;
@@ -86,14 +98,14 @@ export class HttpBackend implements Backend, AccountApi {
     return this.call(async () => {
       await this.req('DELETE', '/v1/account');
       localStorage.removeItem(TOKEN);
-      this.token = null;
+      this.token_ = null;
       this.apply(await this.req<Me>('POST', '/v1/auth/guest'));
     });
   }
 
   private apply(me: Me) {
     if (me.token) {
-      this.token = me.token;
+      this.token_ = me.token;
       localStorage.setItem(TOKEN, me.token);
     }
     this.S = me.profile;
@@ -116,7 +128,7 @@ export class HttpBackend implements Backend, AccountApi {
       method,
       headers: {
         ...(body ? { 'content-type': 'application/json' } : {}),
-        ...(this.token ? { authorization: 'Bearer ' + this.token } : {}),
+        ...(this.token_ ? { authorization: 'Bearer ' + this.token_ } : {}),
       },
       ...(body ? { body: JSON.stringify(body) } : {}),
       signal: AbortSignal.timeout(10_000),

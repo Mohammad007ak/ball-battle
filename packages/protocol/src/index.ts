@@ -55,3 +55,24 @@ export const VerifyRequestSchema = z.object({
 });
 
 export type ActResult = { ok: true; data?: unknown } | { ok: false; code: string; need?: number };
+export * from './snapshot';
+
+/* ---------- online matches (WebSocket /v1/ws), client → server ---------- */
+export const ClientMsgSchema = z.discriminatedUnion('t', [
+  z.object({ t: z.literal('hello'), token: z.string().max(100) }),
+  z.object({ t: z.literal('queue'), mode: z.literal('1v1') }),
+  z.object({ t: z.literal('cancel') }),
+  z.object({ t: z.literal('rejoin'), room: z.string().max(40) }),
+  z.object({ t: z.literal('pick'), i: int.min(0).max(1) }),
+  z.object({
+    t: z.literal('in'),
+    i: z.union([
+      z.object({ t: z.literal('boost'), x: z.number().finite(), y: z.number().finite() }),
+      z.object({ t: z.literal('ability') }),
+    ]),
+  }),
+  z.object({ t: z.literal('emo'), k: z.enum(['laugh', 'thumb', 'love', 'wow', 'angry', 'cry']) }),
+  z.object({ t: z.literal('fin') }),
+  z.object({ t: z.literal('surrender') }),
+]);
+export type ClientMsg = z.infer<typeof ClientMsgSchema>;

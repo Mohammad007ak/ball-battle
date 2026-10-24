@@ -7,6 +7,7 @@
   "types": "./src/index.ts",
   "dependencies": {
     "@chakachak/content": "workspace:*",
+    "@chakachak/engine": "workspace:*",
     "zod": "^3.25.76"
   }
 }

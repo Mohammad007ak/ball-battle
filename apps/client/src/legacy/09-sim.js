@@ -18,6 +18,8 @@ const TXT = {
 };
 /** Client-only look of engine objects (projectile spin, rainbow hue), keyed by the engine object. */
 const LOOK = new WeakMap();
+/** View fighter for an engine fighter id (online, G.f is reordered so G.f[0] is the player). */
+const fv = (id) => (G.byId ? G.byId[id] : G.f[id]);
 
 function later(fn, ms) {
   const id = G && G.id;
@@ -91,6 +93,7 @@ function baseG(mode, li) {
 }
 function openMatchScreen(li) {
   resetRound();
+  $('.foe .tag').hidden = false;
   document.body.style.setProperty('--tint', ARENAS[li].accent);
   showMatch();
   sizeCanvas();
@@ -106,6 +109,10 @@ function openMatchScreen(li) {
 async function startMatch() {
   if (S.mode === '2v2') {
     startMatch2();
+    return;
+  }
+  if (CK.BK.onlineUrl && CK.BK.onlineUrl()) {
+    startOnline();
     return;
   }
   const req = await requestMatch('1v1');
@@ -223,6 +230,10 @@ function choose(i) {
   if (!G || G.phase !== 'pick') return;
   clearTimeout(G.pickT);
   G.phase = 'vs';
+  if (G.online) {
+    onlinePick(i);
+    return;
+  }
   G.log.rounds.push({ pick: i, inputs: [] });
   const bi = CK.E.botPick(G.M, 1);
   beginRound(CK.E.roundConfig(G.M, G.map.id, [i, bi], CK.B, { fx: true, botSkill: G.skill }), ['تو', G.botName]);
@@ -253,17 +264,20 @@ function beginRound(cfg, names) {
 /* ---------- per-frame update ---------- */
 function nudge(f, x, y) {
   if (!G || !G.R || G.phase !== 'fight' || !f.isPlayer || f.charges < 1 || f.out || f.hp <= 0) return false;
-  G.inputs.push({ t: 'boost', fid: f.id, x, y });
+  if (G.online) onlineSend({ t: 'in', i: { t: 'boost', x, y } });
+  else G.inputs.push({ t: 'boost', fid: f.id, x, y });
   return true;
 }
 function useAbility(f) {
-  if (G && G.R && G.phase === 'fight' && f.isPlayer) G.inputs.push({ t: 'ability', fid: f.id });
+  if (!G || !G.R || G.phase !== 'fight' || !f.isPlayer) return;
+  if (G.online) onlineSend({ t: 'in', i: { t: 'ability' } });
+  else G.inputs.push({ t: 'ability', fid: f.id });
 }
 
 function syncView() {
   const R = G.R;
   for (const ef of R.f) {
-    const v = G.f[ef.id];
+    const v = fv(ef.id);
     Object.assign(v, ef);
     if (ef.aura) v.aura = { ...ef.aura, col: AURA_COL[ef.aura.kind] };
   }
@@ -272,9 +286,9 @@ function syncView() {
     if (!l) LOOK.set(o, (l = init()));
     return l;
   };
-  G.arrows = R.arrows.map((a) => ({ ...a, owner: G.f[a.owner], spin: look(a, () => ({ spin: Math.random() * TAU })).spin }));
-  G.zones = R.zones.map((z) => ({ ...z, owner: G.f[z.owner], hue: look(z, () => ({ hue: (G.clock * 360) % 360 })).hue }));
-  G.mines = R.mines.map((m) => ({ ...m, owner: G.f[m.owner] }));
+  G.arrows = R.arrows.map((a) => ({ ...a, owner: fv(a.owner), spin: look(a, () => ({ spin: Math.random() * TAU })).spin }));
+  G.zones = R.zones.map((z) => ({ ...z, owner: fv(z.owner), hue: look(z, () => ({ hue: (G.clock * 360) % 360 })).hue }));
+  G.mines = R.mines.map((m) => ({ ...m, owner: fv(m.owner) }));
   G.drops = R.drops;
   G.pups = R.pups;
   G.time = R.time;
@@ -290,19 +304,19 @@ function onEvents(evs) {
       case 'burst': burst(e.x, e.y, e.c, e.n, e.spd); break; // prettier-ignore
       case 'shake': G.shake = Math.max(G.shake, e.v); break; // prettier-ignore
       case 'sfx': sfx(e.n); break; // prettier-ignore
-      case 'beam': G.beams.push({ a: G.f[e.a], b: G.f[e.b], life: e.life, col: e.col }); break; // prettier-ignore
-      case 'bolt': G.bolts.push({ ax: e.ax, ay: e.ay, b: G.f[e.b], life: 0.25, seed: Math.random() }); break; // prettier-ignore
-      case 'swap': G.f[e.a].trail = []; G.f[e.b].trail = []; break; // prettier-ignore
-      case 'teleport': G.f[e.fid].trail = []; break; // prettier-ignore
+      case 'beam': G.beams.push({ a: fv(e.a), b: fv(e.b), life: e.life, col: e.col }); break; // prettier-ignore
+      case 'bolt': G.bolts.push({ ax: e.ax, ay: e.ay, b: fv(e.b), life: 0.25, seed: Math.random() }); break; // prettier-ignore
+      case 'swap': fv(e.a).trail = []; fv(e.b).trail = []; break; // prettier-ignore
+      case 'teleport': fv(e.fid).trail = []; break; // prettier-ignore
       case 'dmg': {
-        const f = G.f[e.fid];
+        const f = fv(e.fid);
         addText(e.x + (Math.random() * 16 - 8), e.y, fa(e.n), e.c || (f.isPlayer ? '#ff6b6b' : '#ffc53d'), e.n >= 14);
         f.flash = 0.12;
         if (e.n >= 12) G.hitstop = 0.07;
         break;
       }
       case 'text': {
-        const f = e.fid !== undefined ? G.f[e.fid] : null;
+        const f = e.fid !== undefined ? fv(e.fid) : null;
         const t = e.key === 'ability' ? CLASSES[f.cls].ab[f.ab].n + '!' : TXT[e.key];
         addText(e.x, e.y, t, e.c, e.big);
         if (e.key === 'out') {
@@ -314,7 +328,7 @@ function onEvents(evs) {
         break;
       }
       case 'banner': {
-        const f = e.fid !== undefined ? G.f[e.fid] : null,
+        const f = e.fid !== undefined ? fv(e.fid) : null,
           P = e.type ? PUPS[e.type] : null;
         if (e.key === 'start') banner('شروع!', e.c);
         else if (e.key === 'shrink') banner('زمین کوچک می‌شود!', e.c);
@@ -327,7 +341,7 @@ function onEvents(evs) {
         break;
       }
       case 'boost': {
-        const f = G.f[e.fid];
+        const f = fv(e.fid);
         if (!f.isPlayer) break;
         sfx('tap');
         for (let i = 0; i < 8; i++) {
@@ -373,6 +387,10 @@ function update(dt) {
   }
   if (G.phase === 'finish') {
     finUpdate(dt);
+    return;
+  }
+  if (G.online) {
+    onlineFrame();
     return;
   }
   if ((G.phase !== 'count' && G.phase !== 'fight') || !G.R || G.R.result) return;

@@ -78,6 +78,9 @@ importers:
       fastify:
         specifier: ^5.12.7
         version: 5.12.7
+      ws:
+        specifier: ^8.22.0
+        version: 8.22.0
       zod:
         specifier: ^3.25.76
         version: 3.25.76
@@ -85,6 +88,9 @@ importers:
       '@types/node':
         specifier: ^26.6.5
         version: 26.6.5
+      '@types/ws':
+        specifier: ^8.18.2
+        version: 8.18.2
       tsx:
         specifier: ^4.23.15
         version: 4.23.15
@@ -111,9 +117,27 @@ importers:
       '@chakachak/content':
         specifier: workspace:*
         version: link:../content
+      '@chakachak/engine':
+        specifier: workspace:*
+        version: link:../engine
       zod:
         specifier: ^3.25.76
         version: 3.25.76
+
+  tools/loadtest:
+    dependencies:
+      '@chakachak/content':
+        specifier: workspace:*
+        version: link:../../packages/content
+      '@chakachak/economy':
+        specifier: workspace:*
+        version: link:../../packages/economy
+      '@chakachak/engine':
+        specifier: workspace:*
+        version: link:../../packages/engine
+      '@chakachak/server':
+        specifier: workspace:*
+        version: link:../../apps/server
 
   tools/sim:
     dependencies:
@@ -516,6 +540,9 @@ packages:
 
   '@types/node@26.6.5':
     resolution: {integrity: sha512-uMzsv9stDdofIZBx4UGh4Z9ZgXnGC9seRDscilBcTHAeOFk67MZg/k9bWVfO+bk4qZmG+l52hRnLwUiH2LnJTg==}
+
+  '@types/ws@8.18.2':
+    resolution: {integrity: sha512-67MQl+fpWKVTT1NYdnmo3U4sc/xPo/zQBncVnI74qmQa0z/b+1g6iYqNmGCPbxO+zz2aklb08a0oHfegiVd0/w==}
 
   '@typescript-eslint/eslint-plugin@8.72.0':
     resolution: {integrity: sha512-aysKgysPX9XOv/dk95UkvUDe++Q3n3dJPG9CEWT3RUccxfkPJ+Qn6nhKPDhZXU6Ofo9kgwGWwKyQCnZIXTgngg==}
@@ -1235,6 +1262,18 @@ packages:
     resolution: {integrity: sha512-BN22B5eaMMI9UMtjrGd5g5eCYPpCPDUy0FJXbYsaT5zYxjFOckS53SQDE3pWkVoWpHXVb3BrYcEN4Twa55B5cA==}
     engines: {node: '>=0.10.0'}
 
+  ws@8.22.0:
+    resolution: {integrity: sha512-Ydggc987+RO0AnWtZ/7Wq9FtNvcrL1b/RO0ud9mWjUPgDrsAAwQSF51sm2hm1XofbU/4jkpGEsLFsZZxU+1DOg==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   yocto-queue@0.1.0:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
@@ -1497,6 +1536,10 @@ snapshots:
   '@types/node@26.6.5':
     dependencies:
       undici-types: 8.9.0
+
+  '@types/ws@8.18.2':
+    dependencies:
+      '@types/node': 26.6.5
 
   '@typescript-eslint/eslint-plugin@8.72.0(@typescript-eslint/parser@8.72.0(eslint@10.13.0)(typescript@5.9.3))(eslint@10.13.0)(typescript@5.9.3)':
     dependencies:
@@ -2187,6 +2230,8 @@ snapshots:
   why-is-node-running@3.2.1: {}
 
   word-wrap@1.2.5: {}
+
+  ws@8.22.0: {}
 
   yocto-queue@0.1.0: {}
 

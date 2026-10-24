@@ -1,12 +1,19 @@
 // Ported from prototype/ball-battle.html (lines 3208-3264). Shared-scope legacy script (plain JS, as in the prototype): see vite.config.ts.
 function finishMatch(win,quit){
   if(G.done)return;G.done=true;G.ended=true;G.phase='end';clearTimeout(G.pickT);$('#ov').hidden=true;$('#mm').hidden=true;
+  // Online: the server already decided; show its result when it arrives (see 21-online.js).
+  if(G.online&&!G.room){onlineSend({t:'cancel'});closeOnline();closeMatch();setTab('battle');return}
+  if(G.online){if(quit)onlineSend({t:'surrender'});G.quit=quit;if(G.onlineResult)showResult(G.onlineResult.win,quit,G.onlineResult);return}
   // Trophies and chest are decided by the backend (offline: the local fake server).
   // The backend replays the recorded inputs and decides the result; show its verdict.
   act({t:'match',id:G.matchId,log:quit?{rounds:G.log.rounds,surrender:true}:G.log}).then(r=>{
   if(!r)return;
   if(!quit&&(r.win!==win||r.score.join()!==G.score.join()))console.error('replay mismatch',win,G.score,r);
-  win=r.win;
+  showResult(r.win,quit,r);
+  });
+}
+/** Final result card (trophies, chest, arena change) from the backend's verdict `r`. */
+function showResult(win,quit,r){
   const {trophies:dt,tier,slot,before,after}=r;
   later(()=>{
     sfx(win?'win':'lose');$('#rTitle').textContent=win?'بردی!':'باختی';$('#rTitle').className=win?'w':'l';
@@ -20,9 +27,8 @@ function finishMatch(win,quit){
     if(after!==before)p.textContent=after>before?`به آرنای ${ARENAS[after].name} رسیدی`:`به آرنای ${ARENAS[after].name} برگشتی`;
     $('#result').hidden=false;
   },quit?0:900);
-  });
 }
-function closeMatch(){$('#emoPanel').hidden=true;$('#finBtn').hidden=true;musicDuck(false);cancelAnimationFrame(raf);if(G)clearTimeout(G.pickT);G=null;$('#result').hidden=true;$('#ov').hidden=true;$('#mm').hidden=true}
+function closeMatch(){if(G&&G.online)closeOnline();$('#emoPanel').hidden=true;$('#finBtn').hidden=true;musicDuck(false);cancelAnimationFrame(raf);if(G)clearTimeout(G.pickT);G=null;$('#result').hidden=true;$('#ov').hidden=true;$('#mm').hidden=true}
 $('#againBtn').addEventListener('click',()=>{closeMatch();startMatch()});
 $('#homeBtn').addEventListener('click',()=>{closeMatch();setTab('battle')});
 

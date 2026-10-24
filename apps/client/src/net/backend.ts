@@ -47,4 +47,10 @@ export interface Backend {
   /** Server day for the daily shop, as yyyymmdd. */
   dayKey(): number;
   act(a: Action): Promise<ActResult>;
+  /** Online matches (real server only): WebSocket URL and the session token for its `hello`. */
+  onlineUrl?(): string | null;
+  token?(): string | null;
+  /** Profile pushed by the server outside `act` (online match result). */
+  setProfile?(p: Profile): void;
+  refresh?(): Promise<void>;
 }

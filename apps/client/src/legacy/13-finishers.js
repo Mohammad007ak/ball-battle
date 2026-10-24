@@ -325,12 +325,12 @@ function startFinish(w,A0,V0){
   Object.assign(G,{arrows:[],zones:[],mines:[],drops:[],beams:[],bolts:[],pups:[],emo:[],banner:null,slow:0,hitstop:0,ins:0,phase:'finish'});
   G.f.forEach(f=>{f.aura=null});
   const P=(f,look)=>({cls:f.cls,skin:f.skin||'',r:f.r,x0:f.x,y0:f.y,look});
-  G.fin={w,stage:'prompt',t:0,T:0,A:P(A,0),V:P(V,Math.PI),ev:{},k:A.cls,botGo:w===1&&Math.random()<0.8?1.0+Math.random()*0.9:-1};
+  G.fin={w,stage:'prompt',t:0,T:0,A:P(A,0),V:P(V,Math.PI),ev:{},k:A.cls,botGo:w===1&&!G.online&&Math.random()<0.8?1.0+Math.random()*0.9:-1};
   $('#emoPanel').hidden=true;
   if(w===0){const b=$('#finBtn');b.hidden=false;b.style.setProperty('--p',1)}
   sfx('finishHim');musicDuck(true);
 }
-function finGo(){const F=G&&G.fin;if(!F||F.stage!=='prompt')return;F.stage='play';F.T=0;F.ev={};$('#finBtn').hidden=true;sfx('finGo')}
+function finGo(){const F=G&&G.fin;if(!F||F.stage!=='prompt')return;if(G.online&&F.w===0)onlineSend({t:'fin'});F.stage='play';F.T=0;F.ev={};$('#finBtn').hidden=true;sfx('finGo')}
 function finUpdate(dt){const F=G.fin;F.t+=dt;
   if(F.stage==='prompt'){const left=FIN_PROMPT-F.t;if(F.w===0)$('#finBtn').style.setProperty('--p',Math.max(0,left/FIN_PROMPT));
     if(F.botGo>0&&F.t>=F.botGo)finGo();else if(left<=0){F.stage='fall';F.T=0;$('#finBtn').hidden=true;sfx('thud')}}

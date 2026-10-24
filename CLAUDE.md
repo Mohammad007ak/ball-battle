@@ -67,5 +67,6 @@ pnpm typecheck      # tsc -b (project references)
 pnpm lint           # ESLint (engine purity rules included)
 pnpm format         # Prettier
 pnpm sim            # balance simulator (fast sample); --full = all 22,680 rounds, --check = fail outside 45–55%, --tune N = auto-tuner passes (writes tools/sim/out/)
+pnpm loadtest --rooms 200 --seconds 300   # N concurrent online matches in one process: CPU, memory, bandwidth
 ```
 Android build commands are added in Phase 6.
