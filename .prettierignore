@@ -4,3 +4,4 @@ dist/
 docs/
 CLAUDE.md
 apps/client/src/legacy/
+apps/client/android/

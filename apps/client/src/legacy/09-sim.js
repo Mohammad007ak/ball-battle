@@ -312,6 +312,7 @@ function onEvents(evs) {
         const f = fv(e.fid);
         addText(e.x + (Math.random() * 16 - 8), e.y, fa(e.n), e.c || (f.isPlayer ? '#ff6b6b' : '#ffc53d'), e.n >= 14);
         f.flash = 0.12;
+        if (f.isPlayer || e.n >= 12) CK.N.haptic(e.n >= 12 ? 'heavy' : 'light');
         if (e.n >= 12) G.hitstop = 0.07;
         break;
       }

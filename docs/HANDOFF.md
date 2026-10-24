@@ -37,6 +37,20 @@ Tests: `pnpm test` (116 green), `pnpm typecheck`, `pnpm lint`, `pnpm sim --full 
 6. **Size 40–60 MB with real content**, e.g.: replace procedural Web Audio music/SFX with high-quality OGG/MP3 files (biggest legit lever), ship arena/chest art at higher resolution (ask the user for single 1024² chest images and the remaining 4 arenas: Persepolis, Tochal, Sabalan, Damavand — prompts were given earlier, see `assets/art-src` naming), add a store-feature/intro video only if the user wants. Measure with the release AAB.
 7. **Release**: signed AAB + APK, `docs/RELEASE.md` (keystore handling, Bazaar and Myket listing steps, screenshots, age rating, privacy policy link, chest-odds disclosure).
 
+## Phase 6 progress
+- [x] 1. Capacitor 8 Android project (`apps/client/android`, `capacitor.config.ts`): id `ir.chakachak.game`
+  (**not yet confirmed by the user**), icons/splash (`tools/art/android.py`), portrait, keep-awake in
+  matches, back button (`src/legacy/22-back.js`), haptics (`src/native.ts`, bridge `CK.N`), store
+  flavours `bazaar`/`myket` (`BuildConfig.STORE`), release signing from `keystore.properties`.
+  Debug APK builds (≈25 MB); not yet run on a real device.
+- [x] 4. Analytics: `events` table, `POST /v1/events`, `retention()` (D1/D7/D30) in
+  `apps/server/src/telemetry.ts`; client `src/telemetry.ts` (`CK.T.track`): session_start, match, chest_open.
+- [x] 5. Error reports: `errors` table, `POST /v1/errors` (no login needed); WebView global handlers;
+  native crashes saved by `MainActivity` and sent on next launch.
+- [ ] 2. IAP (Poolakey / Myket native plugins + server verification), 3. shop UI, 6. size, 7. release
+  (`docs/RELEASE.md` started).
+- Sandbox note: Maven Central returned 429 here; a local `~/.gradle/init.d` mirror script was used (not in repo).
+
 ## Things to know
 - `apps/client/src/legacy/*.js` is the prototype's UI, loaded as one module (`vite.config.ts` plugin). It is not type-checked or linted on purpose; new logic goes in typed TS modules (`src/net`, `src/art.ts`, …) and is reached from legacy code via the `CK` bridge (`src/bridge.ts`).
 - Backend choice in `src/main.ts`: `VITE_API_URL` set → `HttpBackend` (real server, auto guest login), unset → `LocalBackend` (offline fake server with test tools). Online 1v1 is used automatically with a real server.

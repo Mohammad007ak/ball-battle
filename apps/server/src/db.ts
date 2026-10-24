@@ -63,6 +63,28 @@ const MIGRATIONS = [
      note text,
      at integer not null
    )`,
+  `create table events (
+     id integer primary key,
+     player_id text not null,
+     name text not null,
+     data text,
+     client_at integer not null,
+     at integer not null
+   )`,
+  `create index events_name on events(name, at)`,
+  `create index events_player on events(player_id, at)`,
+  `create table errors (
+     id integer primary key,
+     player_id text,
+     kind text not null,
+     message text not null,
+     stack text,
+     source text,
+     app text not null,
+     device text,
+     at integer not null
+   )`,
+  `create index errors_at on errors(at)`,
 ];
 
 export function openDb(path: string): DB {

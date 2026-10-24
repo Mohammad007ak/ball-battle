@@ -76,3 +76,34 @@ export const ClientMsgSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('surrender') }),
 ]);
 export type ClientMsg = z.infer<typeof ClientMsgSchema>;
+
+/* ---------- telemetry (our own server; no foreign analytics services) ---------- */
+const eventName = z.string().regex(/^[a-z][a-z0-9_]{1,31}$/);
+const scalar = z.union([z.string().max(64), z.number().finite(), z.boolean()]);
+
+/** POST /v1/events — a batch of gameplay/retention events, sent by a logged-in client. */
+export const EventsRequestSchema = z.object({
+  events: z
+    .array(
+      z.object({
+        n: eventName,
+        /** Client time (ms); the server also stores its own receive time. */
+        t: z.number().int().nonnegative(),
+        d: z.record(z.string().max(24), scalar).optional(),
+      }),
+    )
+    .min(1)
+    .max(50),
+});
+export type TelemetryEvent = z.infer<typeof EventsRequestSchema>['events'][number];
+
+/** POST /v1/errors — JS errors from the WebView and native crashes (login not required). */
+export const ErrorReportSchema = z.object({
+  kind: z.enum(['error', 'rejection', 'native']),
+  message: z.string().max(500),
+  stack: z.string().max(4000).optional(),
+  source: z.string().max(200).optional(),
+  app: z.string().max(32),
+  device: z.string().max(120).optional(),
+});
+export type ErrorReport = z.infer<typeof ErrorReportSchema>;

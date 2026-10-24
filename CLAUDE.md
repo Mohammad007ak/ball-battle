@@ -69,4 +69,7 @@ pnpm format         # Prettier
 pnpm sim            # balance simulator (fast sample); --full = all 22,680 rounds, --check = fail outside 45–55%, --tune N = auto-tuner passes (writes tools/sim/out/)
 pnpm loadtest --rooms 200 --seconds 300   # N concurrent online matches in one process: CPU, memory, bandwidth
 ```
-Android build commands are added in Phase 6.
+pnpm android:sync     # vite build + cap sync (set VITE_API_URL to the production server first)
+pnpm android:debug    # debug APKs for both stores (needs JDK 21 + Android SDK, sdk.dir in apps/client/android/local.properties)
+pnpm android:release  # signed AAB + APK per store (needs apps/client/android/keystore.properties, see docs/RELEASE.md)
+python3 tools/art/android.py   # regenerate launcher icons + splash from the art

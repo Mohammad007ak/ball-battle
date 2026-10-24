@@ -15,6 +15,7 @@ function finishMatch(win,quit){
 /** Final result card (trophies, chest, arena change) from the backend's verdict `r`. */
 function showResult(win,quit,r){
   const {trophies:dt,tier,slot,before,after}=r;
+  CK.T.track('match',{mode:G.mode||'1v1',win,quit:!!quit,online:!!G.online,trophies:dt});
   later(()=>{
     sfx(win?'win':'lose');$('#rTitle').textContent=win?'بردی!':'باختی';$('#rTitle').className=win?'w':'l';
     $('#rSub').textContent=quit?'تسلیم شدی':G.mode==='2v2'?'نبرد ۲ در ۲':'';
@@ -28,7 +29,7 @@ function showResult(win,quit,r){
     $('#result').hidden=false;
   },quit?0:900);
 }
-function closeMatch(){if(G&&G.online)closeOnline();$('#emoPanel').hidden=true;$('#finBtn').hidden=true;musicDuck(false);cancelAnimationFrame(raf);if(G)clearTimeout(G.pickT);G=null;$('#result').hidden=true;$('#ov').hidden=true;$('#mm').hidden=true}
+function closeMatch(){CK.N.keepAwake(false);if(G&&G.online)closeOnline();$('#emoPanel').hidden=true;$('#finBtn').hidden=true;musicDuck(false);cancelAnimationFrame(raf);if(G)clearTimeout(G.pickT);G=null;$('#result').hidden=true;$('#ov').hidden=true;$('#mm').hidden=true}
 $('#againBtn').addEventListener('click',()=>{closeMatch();startMatch()});
 $('#homeBtn').addEventListener('click',()=>{closeMatch();setTab('battle')});
 

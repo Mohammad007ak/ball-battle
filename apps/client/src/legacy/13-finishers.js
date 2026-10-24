@@ -321,7 +321,7 @@ butterfly:{n:'پیلهٔ ابدی',dur:4.3,draw(c,T,F,ev){const A=F.A,V=F.V,sw=s
 function crackPath(c,x,y,seed,len,base){let a=base==null?rnd(seed)*TAU:base+(rnd(seed)-0.5)*1.6;c.moveTo(x,y);for(let i=0;i<5;i++){a+=(rnd(seed+i*3.3)-0.5)*1.0;x+=Math.cos(a)*len/5;y+=Math.sin(a)*len/5;c.lineTo(x,y)}c.stroke()}
 
 function startFinish(w,A0,V0){
-  const A=A0||G.f[w],V=V0||G.f[1-w];
+  const A=A0||G.f[w],V=V0||G.f[1-w];CK.N.haptic('heavy');
   Object.assign(G,{arrows:[],zones:[],mines:[],drops:[],beams:[],bolts:[],pups:[],emo:[],banner:null,slow:0,hitstop:0,ins:0,phase:'finish'});
   G.f.forEach(f=>{f.aura=null});
   const P=(f,look)=>({cls:f.cls,skin:f.skin||'',r:f.r,x0:f.x,y0:f.y,look});

@@ -1,5 +1,11 @@
 import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
-import { ActRequestSchema, OtpRequestSchema, VerifyRequestSchema } from '@chakachak/protocol';
+import {
+  ActRequestSchema,
+  ErrorReportSchema,
+  EventsRequestSchema,
+  OtpRequestSchema,
+  VerifyRequestSchema,
+} from '@chakachak/protocol';
 import type { z } from 'zod';
 import {
   AuthError,
@@ -16,6 +22,7 @@ import type { DB } from './db';
 import { act, loadProfile, me } from './game';
 import { RateLimiter } from './ratelimit';
 import type { SmsProvider } from './sms';
+import { recordError, recordEvents } from './telemetry';
 
 export interface Ctx {
   db: DB;
@@ -117,6 +124,26 @@ export function buildApp(o: AppOptions) {
     const id = player(req),
       b = parse(ActRequestSchema, req.body);
     return { ...act(c, id, b.action, b.idem), profile: loadProfile(c, id), now: c.now() };
+  });
+  app.post('/v1/events', async (req) => {
+    const id = player(req),
+      b = parse(EventsRequestSchema, req.body);
+    if (!c.limit.take('events:' + id, 30, 60_000)) throw new AuthError('rateLimited');
+    recordEvents(c.db, id, b.events, c.now());
+    return { ok: true };
+  });
+  // Crash reports may come before login (or with an expired token), so auth is optional here.
+  app.post('/v1/errors', async (req) => {
+    const b = parse(ErrorReportSchema, req.body);
+    if (!c.limit.take('errors:' + req.ip, 20, 60_000)) throw new AuthError('rateLimited');
+    let id: string | null = null;
+    try {
+      if (req.headers.authorization) id = authenticate(c, req.headers.authorization);
+    } catch {
+      /* report anonymously */
+    }
+    recordError(c.db, id, b, c.now());
+    return { ok: true };
   });
   return { app, ctx: c };
 }

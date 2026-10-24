@@ -6,7 +6,7 @@ function setTab(t){
   if(t==='battle')renderBattle();else renderCards();
   window.scrollTo(0,0);musicFor();
 }
-function showMatch(){$('#battle').hidden=true;$('#cards').hidden=true;$('#match').hidden=false;$('#tabs').hidden=true;window.scrollTo(0,0);musicFor()}
+function showMatch(){$('#battle').hidden=true;$('#cards').hidden=true;$('#match').hidden=false;$('#tabs').hidden=true;window.scrollTo(0,0);musicFor();CK.N.keepAwake(true)}
 $('#tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b)setTab(b.dataset.tab)});
 
 /* ---------- ICONS ---------- */

@@ -15,7 +15,10 @@
     "dev:server": "pnpm --filter @chakachak/server dev",
     "build": "pnpm -r build",
     "sim": "tsx tools/sim/src/cli.ts",
-    "loadtest": "tsx tools/loadtest/src/index.ts"
+    "loadtest": "tsx tools/loadtest/src/index.ts",
+    "android:sync": "pnpm --filter @chakachak/client build && pnpm --filter @chakachak/client exec cap sync android",
+    "android:debug": "pnpm android:sync && cd apps/client/android && ./gradlew assembleBazaarDebug assembleMyketDebug",
+    "android:release": "pnpm android:sync && cd apps/client/android && ./gradlew bundleBazaarRelease bundleMyketRelease assembleBazaarRelease assembleMyketRelease"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

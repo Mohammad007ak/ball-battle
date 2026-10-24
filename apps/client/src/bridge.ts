@@ -4,6 +4,8 @@ import * as E from '@chakachak/engine';
 import * as P from '@chakachak/protocol';
 import type { Art } from './art';
 import type { Backend } from './net/backend';
+import { native, type Native } from './native';
+import { Telemetry } from './telemetry';
 
 /** What the legacy (prototype-ported) scripts can reach: engine, data, economy rules and backend. */
 export interface Bridge {
@@ -13,8 +15,17 @@ export interface Bridge {
   P: typeof P;
   BK: Backend;
   ART: Art | null;
+  /** Phone features (haptics, keep-awake, back button). */
+  N: Native;
+  /** Analytics events to our own server. */
+  T: Telemetry;
 }
 
-export function makeBridge(BK: Backend, B: Balance = defaultBalance, ART: Art | null = null): Bridge {
-  return { E, B, EC, P, BK, ART };
+export function makeBridge(
+  BK: Backend,
+  B: Balance = defaultBalance,
+  ART: Art | null = null,
+  T: Telemetry = new Telemetry(null),
+): Bridge {
+  return { E, B, EC, P, BK, ART, N: native, T };
 }

@@ -1,11 +1,19 @@
 {
   "name": "@chakachak/client",
-  "version": "0.0.0",
+  "version": "0.6.0",
   "private": true,
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "dependencies": {
+    "@capacitor-community/keep-awake": "8.0.1",
+    "@capacitor/android": "8.5.3",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/haptics": "8.0.2",
+    "@capacitor/preferences": "8.0.1",
+    "@capacitor/splash-screen": "8.0.2",
+    "@capacitor/status-bar": "8.0.4",
     "@chakachak/content": "workspace:*",
     "@chakachak/economy": "workspace:*",
     "@chakachak/engine": "workspace:*",
@@ -19,6 +27,7 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@capacitor/cli": "8.5.3",
     "@types/node": "^26.6.5",
     "vite": "^8.3.5"
   }

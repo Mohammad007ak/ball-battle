@@ -2,6 +2,11 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, type Plugin } from 'vite';
 
+const VERSION = (
+  JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
+    version: string;
+  }
+).version;
 const LEGACY_DIR = fileURLToPath(new URL('./src/legacy/', import.meta.url));
 
 /**
@@ -30,5 +35,6 @@ function legacyScripts(): Plugin {
 
 export default defineConfig({
   plugins: [legacyScripts()],
+  define: { __APP_VERSION__: JSON.stringify(VERSION) },
   build: { target: 'es2022' },
 });

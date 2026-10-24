@@ -6,6 +6,7 @@ const easeOutBack=p=>1+2.7*Math.pow(p-1,3)+1.7*Math.pow(p-1,2);
 const easeOutBounce=p=>{const n=7.5625,d=2.75;if(p<1/d)return n*p*p;if(p<2/d)return n*(p-=1.5/d)*p+0.75;if(p<2.5/d)return n*(p-=2.25/d)*p+0.9375;return n*(p-=2.625/d)*p+0.984375};
 function setHint(t){const h=$('#chHint');h.textContent=t;h.hidden=!t}
 function showChest(tier,items){
+  CK.T.track('chest_open',{tier});
   CH={tier,items};
   const m=$('#cmodal');m.hidden=false;$('#cbox').hidden=true;$('#chCv').hidden=false;$('#chSkip').hidden=false;
   const before={};items.forEach(it=>{if(it.type==='card'&&!it.isNew)before[it.k]=S.cards[it.k]-it.n});
