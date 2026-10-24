@@ -9,7 +9,7 @@ function finishMatch(win,quit){
     sfx(win?'win':'lose');$('#rTitle').textContent=win?'بردی!':'باختی';$('#rTitle').className=win?'w':'l';
     $('#rSub').textContent=quit?'تسلیم شدی':G.mode==='2v2'?'نبرد ۲ در ۲':'';
     $('#rScore').textContent=`${fa(G.score[0])} - ${fa(G.score[1])}`;
-    $('#rChest').innerHTML=slot>=0
+    $('#rChest').innerHTML=tier<0?'':slot>=0
       ?`<img src="${chestIcon(tier)}" alt=""><b>صندوقچهٔ ${CHESTS[tier].name}</b>`
       :`<b>جایگاه صندوقچه پر بود</b>`;
     $('#rTroph').textContent=sgn(dt);$('#rTroph').style.color=dt>=0?'var(--win)':'var(--lose)';

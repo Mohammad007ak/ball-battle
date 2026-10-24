@@ -33,8 +33,8 @@ describe('economy', () => {
     expect(() => unlockSlot(B, S, 1, t)).toThrow(EconomyError);
     expect(() => openSlot(B, S, 1, t, seq())).toThrow(EconomyError);
     const gems = S.gems;
-    openSlot(B, S, 0, t + 1000, seq()); // 4 s left → 1 gem
-    expect(S.gems).toBeLessThanOrEqual(gems - 1 + 2);
+    openSlot(B, S, 0, t + 900_000 - 300_000, seq()); // 5 min left → 1 gem
+    expect(S.gems).toBe(gems - 1);
     expect(S.slots[0]).toBeNull();
   });
   it('opening a chest twice fails (no double reward)', () => {
@@ -43,11 +43,11 @@ describe('economy', () => {
     openSlot(B, S, 0, 10_000, seq());
     expect(() => openSlot(B, S, 0, 10_000, seq())).toThrow(EconomyError);
   });
-  it('rollChest grants coins and owned-card stacks; legendary chest can unlock new cards', () => {
+  it('rollChest grants coins and owned-card stacks; legendary chests can unlock new cards', () => {
     const S = freshProfile(B);
-    const items = rollChest(B, S, 4, seq(3));
-    expect(items[0]).toMatchObject({ type: 'coins' });
-    expect(items.some((i) => i.type === 'card' && i.isNew)).toBe(true);
+    const rolls = Array.from({ length: 20 }, (_, i) => rollChest(B, S, 4, seq(i + 1)));
+    for (const items of rolls) expect(items[0]).toMatchObject({ type: 'coins' });
+    expect(rolls.some((items) => items.some((i) => i.type === 'card' && i.isNew))).toBe(true);
   });
   it('buying needs gems and never goes negative', () => {
     const S = freshProfile(B);
@@ -67,7 +67,7 @@ describe('economy', () => {
     const S = freshProfile(B);
     const r = matchResult(B, S, true, '1v1');
     expect(r).toMatchObject({ trophies: 30, tier: 0, slot: 3 });
-    expect(matchResult(B, S, false, '1v1').trophies).toBe(-20);
+    expect(matchResult(B, S, false, '1v1')).toMatchObject({ trophies: -20, tier: -1, slot: -1 });
     expect(matchResult(B, S, true, '2v2').trophies).toBe(0);
   });
   it('team swap and profile repair', () => {

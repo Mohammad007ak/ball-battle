@@ -28,7 +28,7 @@ function cardArt(k,sk){
 
 /* ---------- CHESTS ---------- */
 function slotState(s){return CK.EC.slotState(s,CK.BK.now())}
-const skipCost=s=>CK.EC.skipCost(s,CK.BK.now());
+const skipCost=s=>CK.EC.skipCost(CK.B,s,CK.BK.now());
 function updateBadge(){const ready=S.slots.filter(s=>slotState(s)==='ready').length,bd=$('#tabBadge');bd.hidden=!ready;bd.textContent=fa(ready)}
 function renderSlots(){
   const now=CK.BK.now(),box=$('#slots');

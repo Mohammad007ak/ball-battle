@@ -131,9 +131,9 @@ export function slotState(s: ChestSlot | null, now: number): SlotState {
   if (s.end == null) return 'locked';
   return now >= s.end ? 'ready' : 'unlocking';
 }
-/** Gems to finish an unlocking chest now: 1 per 12 s left (prototype `skipCost`). */
-export const skipCost = (s: ChestSlot, now: number) =>
-  Math.max(1, Math.ceil((s.end! - now) / 1000 / 12));
+/** Gems to finish an unlocking chest now: 1 per `ECON.skipSecPerGem` seconds left, at least 1. */
+export const skipCost = (B: Balance, s: ChestSlot, now: number) =>
+  Math.max(1, Math.ceil((s.end! - now) / 1000 / B.game.ECON.skipSecPerGem));
 
 function pickW(B: Balance, arr: ClassKey[], rand: Rand): ClassKey {
   const w = arr.map((k) => B.game.RAR[B.game.CLASSES[k].rar as 'common'].w);
@@ -148,7 +148,7 @@ function pickW(B: Balance, arr: ClassKey[], rand: Rand): ClassKey {
 export function rollChest(B: Balance, S: Profile, tier: number, rand: Rand): Item[] {
   const G = B.game,
     T = G.CHESTS[tier]!,
-    lm = 1 + 0.5 * leagueOf(B, S.trophies),
+    lm = 1 + B.game.ECON.leagueBonus * leagueOf(B, S.trophies),
     items: Item[] = [];
   items.push({
     type: 'coins',
@@ -241,7 +241,7 @@ export function openSlot(B: Balance, S: Profile, i: number, now: number, rand: R
   const s = S.slots[i] ?? null,
     st = slotState(s, now);
   if (st === 'unlocking') {
-    const c = skipCost(s!, now);
+    const c = skipCost(B, s!, now);
     if (S.gems < c) fail('gems', c);
     S.gems -= c;
   } else if (st !== 'ready') fail('notReady');
@@ -329,12 +329,14 @@ export function matchResult(B: Balance, S: Profile, win: boolean, mode: '1v1' | 
   }
   if (mode === '2v2') dt = 0;
   S.trophies += dt;
-  let tier = 0;
-  if (win) {
+  // Only wins give a chest (GDD §2), from the fixed cycle, into the first free slot.
+  let tier = -1,
+    slot = -1;
+  if (win || B.game.ECON.lossChest) {
     tier = B.game.CYCLE[S.cycle % B.game.CYCLE.length]!;
     S.cycle++;
+    slot = S.slots.findIndex((s) => !s);
+    if (slot >= 0) S.slots[slot] = { tier, end: null };
   }
-  const slot = S.slots.findIndex((s) => !s);
-  if (slot >= 0) S.slots[slot] = { tier, end: null };
   return { trophies: dt, tier, slot, before, after: leagueOf(B, S.trophies) };
 }

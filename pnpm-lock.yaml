@@ -97,6 +97,9 @@ importers:
       '@chakachak/content':
         specifier: workspace:*
         version: link:../../packages/content
+      '@chakachak/economy':
+        specifier: workspace:*
+        version: link:../../packages/economy
       '@chakachak/engine':
         specifier: workspace:*
         version: link:../../packages/engine

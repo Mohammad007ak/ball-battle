@@ -694,53 +694,53 @@
   "CHESTS": [
     {
       "name": "چوبی",
-      "sec": 5,
-      "coins": [15, 30],
+      "sec": 900,
+      "coins": [8, 15],
       "gems": [0, 0],
-      "cards": 6,
+      "cards": 3,
       "stacks": 2,
-      "newP": 0.03,
+      "newP": 0.012,
       "skinP": 0
     },
     {
       "name": "نقره‌ای",
-      "sec": 20,
-      "coins": [40, 70],
+      "sec": 10800,
+      "coins": [20, 35],
       "gems": [0, 2],
-      "cards": 16,
+      "cards": 8,
       "stacks": 3,
-      "newP": 0.1,
+      "newP": 0.04,
       "skinP": 0.03
     },
     {
       "name": "طلایی",
-      "sec": 45,
-      "coins": [110, 180],
+      "sec": 28800,
+      "coins": [55, 90],
       "gems": [2, 6],
-      "cards": 40,
+      "cards": 20,
       "stacks": 4,
-      "newP": 0.3,
+      "newP": 0.12,
       "skinP": 0.1
     },
     {
       "name": "جادویی",
-      "sec": 90,
-      "coins": [280, 420],
+      "sec": 43200,
+      "coins": [140, 210],
       "gems": [8, 15],
-      "cards": 90,
+      "cards": 45,
       "stacks": 5,
-      "newP": 0.7,
+      "newP": 0.28,
       "skinP": 0.3,
       "epic": true
     },
     {
       "name": "افسانه‌ای",
-      "sec": 180,
-      "coins": [700, 900],
+      "sec": 86400,
+      "coins": [350, 450],
       "gems": [25, 40],
-      "cards": 160,
+      "cards": 80,
       "stacks": 6,
-      "newP": 1,
+      "newP": 0.4,
       "skinP": 0.65,
       "epic": true
     }
@@ -1627,5 +1627,10 @@
       },
       null
     ]
+  },
+  "ECON": {
+    "skipSecPerGem": 360,
+    "lossChest": false,
+    "leagueBonus": 0.25
   }
 }
