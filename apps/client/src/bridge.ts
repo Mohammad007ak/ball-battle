@@ -5,6 +5,7 @@ import * as P from '@chakachak/protocol';
 import type { Art } from './art';
 import type { Backend } from './net/backend';
 import { native, type Native } from './native';
+import { makeQuality, type Quality } from './quality';
 import { Telemetry } from './telemetry';
 
 /** What the legacy (prototype-ported) scripts can reach: engine, data, economy rules and backend. */
@@ -19,6 +20,8 @@ export interface Bridge {
   N: Native;
   /** Analytics events to our own server. */
   T: Telemetry;
+  /** Match canvas render quality (adapts to slow phones). */
+  Q: Quality;
 }
 
 export function makeBridge(
@@ -27,5 +30,6 @@ export function makeBridge(
   ART: Art | null = null,
   T: Telemetry = new Telemetry(null),
 ): Bridge {
-  return { E, B, EC, P, BK, ART, N: native, T };
+  const Q = makeQuality((level) => T.track('quality', { level }));
+  return { E, B, EC, P, BK, ART, N: native, T, Q };
 }

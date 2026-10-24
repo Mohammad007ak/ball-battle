@@ -10,7 +10,7 @@ function showChest(tier,items){
   CH={tier,items};
   const m=$('#cmodal');m.hidden=false;$('#cbox').hidden=true;$('#chCv').hidden=false;$('#chSkip').hidden=false;
   const before={};items.forEach(it=>{if(it.type==='card'&&!it.isNew)before[it.k]=S.cards[it.k]-it.n});
-  const cvs=$('#chCv'),d=window.devicePixelRatio||1,Wd=m.clientWidth||window.innerWidth,Hd=m.clientHeight||window.innerHeight;
+  const cvs=$('#chCv'),d=Math.min(window.devicePixelRatio||1,2),Wd=m.clientWidth||window.innerWidth,Hd=m.clientHeight||window.innerHeight;
   cvs.width=Math.round(Wd*d);cvs.height=Math.round(Hd*d);
   if(CA)cancelAnimationFrame(CA.raf);
   CA={tier,items,before,W:Wd,H:Hd,d,c:cvs.getContext('2d'),state:'drop',t:0,open:0,idx:-1,it:0,flash:0,parts:[],rays:0,move:0,prevCard:null,last:performance.now(),raf:0};

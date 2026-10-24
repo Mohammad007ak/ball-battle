@@ -43,7 +43,7 @@ function renderBattle(){
 }
 function heroLoop(ts){heroRaf=0;if($('#battle').hidden||G)return;paintHero(ts/1000);heroRaf=requestAnimationFrame(heroLoop)}
 function paintHero(t){
-  const cvA=$('#arenaCv'),w=cvA.clientWidth||340,h=cvA.clientHeight||w*0.8,d=window.devicePixelRatio||1,pw=Math.round(w*d),ph=Math.round(h*d);
+  const cvA=$('#arenaCv'),w=cvA.clientWidth||340,h=cvA.clientHeight||w*0.8,d=Math.min(window.devicePixelRatio||1,2),pw=Math.round(w*d),ph=Math.round(h*d);
   if(cvA.width!==pw||cvA.height!==ph){cvA.width=pw;cvA.height=ph}
   const c=cvA.getContext('2d'),li=leagueOf(S.trophies);
   c.setTransform(1,0,0,1,0,0);c.drawImage(arenaCanvas(li,pw),0,(ph-pw)/2);

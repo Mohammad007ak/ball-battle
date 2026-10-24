@@ -498,6 +498,7 @@ function hud() {
 
 function loop(ts) {
   if (!G) return;
+  if (CK.Q.frame(ts - last)) sizeCanvas();
   let dt = Math.min(0.033, (ts - last) / 1000);
   last = ts;
   if (G.hitstop > 0) {

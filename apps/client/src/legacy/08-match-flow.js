@@ -16,8 +16,8 @@ function arenaCanvas(li,px){
   return ARENA_CACHE[key]=c;
 }
 function sizeCanvas(){
-  const w=cv.clientWidth||340,d=window.devicePixelRatio||1;
-  cv.width=Math.round(w*d);cv.height=Math.round(w*d);scale=cv.width/VW;
+  const w=cv.clientWidth||340,d=CK.Q.dpr();
+  cv.width=Math.round(w*d);cv.height=Math.round(w*d);scale=cv.width/VW;CK.Q.apply(ctx);
   bg=arenaCanvas(G?G.li:0,cv.width);
 }
 window.addEventListener('resize',()=>{if(G)sizeCanvas();});
