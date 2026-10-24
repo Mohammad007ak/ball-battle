@@ -27,15 +27,15 @@ Monorepo, TypeScript everywhere, pnpm workspaces.
 packages/engine/    Pure simulation. No DOM, no rendering, no network. Shared by client and server.
 packages/content/   Data: balance.json, characters, abilities, skins, chests, leagues, i18n strings (fa).
 apps/client/        Vite + TS + Canvas 2D (PixiJS only if profiling demands it). Rendering, UI, audio, input.
-                    Packaged with Capacitor (Android first; iOS later) and as a PWA.
-apps/server/        Node + Colyseus (rooms/matchmaking) + SQLite (Drizzle, WAL, file on persistent volume). No separate DB/Redis.
+                    Packaged with Capacitor (Android only for now; no web/PWA release).
+apps/server/        Node + Fastify + node:sqlite (WAL, one file on a persistent volume). No separate DB/Redis. Colyseus/ws only for online PvP (phase 5).
 apps/admin/         (later) Live-ops panel: remote config, daily shop, player support.
 tools/sim/          Headless balance simulator + auto-tuner (port of the prototype's).
 ```
 
 ## Non-negotiable rules
 1. **Server is authoritative.** Economy (coins, gems, cards, chests, timers, skins, trophies) is computed and stored only on the server. The client never grants itself anything; it only renders server state.
-2. **Online matches are server-simulated.** The server runs `engine`; clients send inputs (`boost(x,y)`, `ability`, `emote`) and render interpolated snapshots. The server decides the result. Add ~100 ms input delay masked by a wind-up animation; support reconnect into a running match.
+2. **Matches against bots run on the phone**; the server hands out the match seed/rosters and verifies the recorded inputs by replay (`engine/replay.ts`) before granting anything. **Online PvP matches (phase 5) are server-simulated.** The server runs `engine`; clients send inputs (`boost(x,y)`, `ability`, `emote`) and render interpolated snapshots. The server decides the result. Add ~100 ms input delay masked by a wind-up animation; support reconnect into a running match.
 3. **Engine is deterministic and pure.** Fixed timestep 1/60 s. No `Math.random` (use a seeded PRNG passed into the match), no `Date.now`/`performance.now`, no DOM. Same seed + same inputs ⇒ same state hash. Rendering-only randomness (particles, shake) stays in the client.
 4. **Data-driven content.** All balance numbers live in `packages/content` and can be overridden by server remote config without an app update. No magic numbers for balance inside engine code.
 5. **Balance gate.** Any change to characters/abilities/numbers must run the simulator; every character and every ability must stay within 45–55% win rate (round-robin, all maps). CI runs a fast version.
@@ -60,7 +60,8 @@ tools/sim/          Headless balance simulator + auto-tuner (port of the prototy
 ```
 pnpm install        # install all workspaces
 pnpm dev:client     # Vite dev server for apps/client
-pnpm dev:server     # (Phase 4) API + Colyseus
+pnpm dev:server     # API server on :8080 (dev: test OTP 12345, test tools on)
+VITE_API_URL=http://localhost:8080 pnpm dev:client   # client against the server (unset = offline fake server)
 pnpm test           # Vitest, all packages
 pnpm typecheck      # tsc -b (project references)
 pnpm lint           # ESLint (engine purity rules included)

@@ -1,6 +1,7 @@
-import { CLASS_KEYS, type Balance } from '@chakachak/content';
+import type { Balance } from '@chakachak/content';
 import * as EC from '@chakachak/economy';
 import type { Profile } from '@chakachak/economy';
+import type { MatchSetup } from '@chakachak/engine';
 import type { Action, ActResult, Backend } from './backend';
 
 const KEY = 'chakachak-profile-v1';
@@ -12,6 +13,8 @@ const KEY = 'chakachak-profile-v1';
 export class LocalBackend implements Backend {
   readonly dev = true;
   private S: Profile;
+  /** Match handed out and not yet finished (abandoning it counts as a loss). */
+  private pending: { id: string; setup: MatchSetup } | null = null;
 
   constructor(private B: Balance) {
     let raw: Partial<Profile>;
@@ -55,48 +58,18 @@ export class LocalBackend implements Backend {
 
   private run(S: Profile, a: Action): object | void {
     const B = this.B,
-      now = this.now(),
       rand = Math.random;
-    switch (a.t) {
-      case 'unlock':
-        return EC.unlockSlot(B, S, a.slot, now);
-      case 'open':
-        return EC.openSlot(B, S, a.slot, now, rand);
-      case 'buyChest':
-        return EC.buyChest(B, S, a.tier, rand);
-      case 'buySkin':
-        return EC.buySkin(B, S, a.k, a.st, this.dayKey());
-      case 'upgrade':
-        return EC.upgrade(B, S, a.k);
-      case 'ability':
-        return EC.setAbility(B, S, a.k, a.ab);
-      case 'equip':
-        return EC.equipSkin(S, a.k, a.st);
-      case 'team':
-        return EC.setTeam(S, a.i, a.k);
-      case 'mode':
-        S.mode = a.mode;
-        return;
-      case 'match':
-        return EC.matchResult(B, S, a.win, a.mode);
-      case 'cheat':
-        return this.cheat(S, a.what, now);
+    if (a.t === 'matchStart') {
+      if (this.pending) EC.matchResult(B, S, false, this.pending.setup.mode);
+      this.pending = { id: crypto.randomUUID(), setup: EC.matchSetup(B, S, a.mode, rand) };
+      return this.pending;
     }
-  }
-
-  /** The prototype's test buttons. */
-  private cheat(S: Profile, what: string, now: number) {
-    const max = this.B.game.MAXLVL;
-    if (what === 'unlock') for (const k of CLASS_KEYS) S.lv[k] ||= 1;
-    if (what === 'coins') S.coins += 1000;
-    if (what === 'gems') S.gems += 500;
-    if (what === 'max') for (const k of CLASS_KEYS) if (S.lv[k]) S.lv[k] = max;
-    if (what === 'tup') S.trophies += 300;
-    if (what === 'tdown') S.trophies = Math.max(0, S.trophies - 300);
-    if (what === 'fill')
-      S.slots = S.slots.map((s) => s || { tier: Math.floor(Math.random() * 5), end: null });
-    if (what === 'fast') S.slots.forEach((s) => s && (s.end = now));
-    if (what === 'reset') Object.assign(S, EC.freshProfile(this.B));
-    return undefined;
+    if (a.t === 'match') {
+      const p = this.pending;
+      if (!p || p.id !== a.id) throw new EC.EconomyError('noMatch');
+      this.pending = null;
+      return EC.matchFinish(B, S, p.setup, a.log);
+    }
+    return EC.applyAction(B, S, a, { now: this.now(), dayKey: this.dayKey(), rand, dev: true });
   }
 }

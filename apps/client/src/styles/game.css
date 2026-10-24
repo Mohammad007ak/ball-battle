@@ -3426,3 +3426,6 @@ body {
   text-align: center;
   color: #d6e0ff;
 }
+body[data-offline]::before{content:"در حال اتصال به سرور…";position:fixed;inset:0;display:grid;place-items:center;z-index:99;background:#0c1d4f;color:#fff;font-family:var(--display);font-size:22px}
+.phin{width:100%;padding:10px 14px;border-radius:14px;border:2px solid var(--ink);background:rgba(4,10,34,.7);color:#fff;font:inherit;font-size:20px;text-align:center;letter-spacing:2px;direction:ltr}
+.acct small{display:block;text-align:center;margin-bottom:6px}

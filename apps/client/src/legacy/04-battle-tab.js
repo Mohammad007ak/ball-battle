@@ -79,8 +79,29 @@ function openGear(){
   openSheet(`<div class="mhead"><b class="tx">تنظیمات</b><button class="xbtn" data-close aria-label="بستن">${ICO.x}</button></div>
     <div class="ptitle"><span class="tx">صدا</span></div>
     <div class="tbtns"><button class="b3d" data-snd="mus">موسیقی: ${AU.musOn?'روشن':'خاموش'}</button><button class="b3d" data-snd="fx">افکت‌ها: ${AU.fxOn?'روشن':'خاموش'}</button></div>
+    ${acctHTML()}
     ${CK.BK.dev?`<div class="ptitle"><span class="tx">ابزار تست</span></div>
     <div class="tbtns">${[['unlock','باز کردن همهٔ شخصیت‌ها'],['coins','+۱۰۰۰ سکه'],['gems','+۵۰۰ الماس'],['max','همه سطح ۸'],['tup','+۳۰۰ جام'],['tdown','−۳۰۰ جام'],['fill','پر کردن جایگاه صندوقچه‌ها'],['fast','آماده کردن صندوقچه‌ها'],['reset','شروع از صفر']].map(([a,t])=>`<button class="b3d" data-test="${a}">${t}</button>`).join('')}</div>`:''}`);
+}
+/* ---------- account (Clash Royale style: guest by default, phone link offered here) ---------- */
+let acctPhone='',acctStep='phone',delArm=0;
+function acctHTML(){
+  const A=CK.BK.account;if(!A)return '';
+  const head='<div class="ptitle"><span class="tx">حساب</span></div>';
+  if(A.linked())return head+`<div class="acct"><small>پیشرفتت با شمارهٔ موبایل ذخیره شده و روی هر گوشی برمی‌گردد.</small><div class="tbtns"><button class="b3d" data-acct="delete">حذف حساب</button></div></div>`;
+  if(acctStep==='code')return head+`<div class="acct"><small>کد ۵ رقمی پیامک‌شده به ${acctPhone} را وارد کن</small><input class="phin" id="acctIn" inputmode="numeric" maxlength="5" autocomplete="one-time-code"><div class="tbtns"><button class="b3d" data-acct="verify">تأیید</button><button class="b3d" data-acct="back">تغییر شماره</button></div></div>`;
+  return head+`<div class="acct"><small>با ثبت شمارهٔ موبایل، پیشرفتت ذخیره می‌شود و روی گوشی دیگر هم برمی‌گردد.</small><input class="phin" id="acctIn" inputmode="tel" placeholder="۰۹۱۲۳۴۵۶۷۸۹" value="${acctPhone}"><div class="tbtns"><button class="b3d" data-acct="otp">ثبت پیشرفت</button></div></div>`;
+}
+const ACCT_ERR={badPhone:'شمارهٔ موبایل درست نیست',tooSoon:'کمی صبر کن و دوباره بفرست',rateLimited:'تعداد درخواست‌ها زیاد است؛ بعداً امتحان کن',wrongCode:'کد اشتباه است',codeExpired:'کد منقضی شد؛ دوباره بفرست',network:'اتصال برقرار نشد'};
+async function acctAction(what){
+  const A=CK.BK.account,inp=$('#acctIn'),v=inp?inp.value.trim():'';
+  if(what==='back'){acctStep='phone';openGear();return}
+  if(what==='otp'){acctPhone=v;const r=await A.requestOtp(v);if(!r.ok){toast(ACCT_ERR[r.code]||'انجام نشد');return}acctStep='code';openGear();return}
+  if(what==='verify'){const r=await A.verify(acctPhone,v);if(!r.ok){toast(ACCT_ERR[r.code]||'انجام نشد');return}
+    acctStep='phone';S=CK.BK.profile();toast(r.data.outcome==='switched'?'به حساب ذخیره‌شده‌ات برگشتی':'پیشرفتت ذخیره شد');openGear();tab==='battle'?renderBattle():renderCards();return}
+  if(what==='delete'){if(Date.now()>delArm){delArm=Date.now()+3000;toast('برای حذف همیشگی حساب دوباره بزن');return}
+    const r=await A.deleteAccount();if(!r.ok){toast(ACCT_ERR[r.code]||'انجام نشد');return}
+    S=CK.BK.profile();$('#sheet').hidden=true;toast('حساب حذف شد');setTab('battle')}
 }
 // Test tools: only the offline fake backend accepts these (CK.BK.dev).
 const TEST_MSG={unlock:'همهٔ شخصیت‌ها باز شدند',coins:'+۱۰۰۰ سکه',gems:'+۵۰۰ الماس',max:'همهٔ کارت‌ها سطح ۸',fill:'جایگاه‌ها پر شدند',fast:'صندوقچه‌ها آماده‌اند',reset:'شروع از صفر'};
@@ -94,6 +115,7 @@ $('#sheet').addEventListener('click',e=>{
   if(e.target.id==='sheet'||e.target.closest('[data-close]')){$('#sheet').hidden=true;return}
   const sn=e.target.closest('[data-snd]');if(sn){const k=sn.dataset.snd;setSound(k,!(k==='mus'?AU.musOn:AU.fxOn));openGear();return}
   const t=e.target.closest('[data-test]');if(t){runTest(t.dataset.test);return}
+  const ac=e.target.closest('[data-acct]');if(ac){acctAction(ac.dataset.acct);return}
   const p=e.target.closest('[data-pick]');if(!p)return;
   $('#sheet').hidden=true;act({t:'team',i:+$('#sheet').dataset.slot,k:p.dataset.pick}).then(()=>tab==='battle'?renderBattle():renderCards());
 });

@@ -2,6 +2,8 @@
 // with packages/engine: the engine owns every gameplay number and outcome; this file keeps the
 // prototype's match flow and turns engine state + events into the view objects `draw()` expects.
 const SIM_DT = CK.E.DT;
+/** Dev only (offline backend): `?speed=8` fast-forwards matches for testing. */
+const DEV_SPEED = CK.BK.dev ? Number(new URLSearchParams(location.search).get('speed')) || 1 : 1;
 const AURA_COL = { snow: '191,243,255', elec: '129,140,248', sun: '255,207,112', petal: '253,164,175' };
 const TXT = {
   block: 'دفع',
@@ -62,29 +64,29 @@ function viewMap(id, w, live) {
 }
 
 /* ---------- match setup (prototype startMatch / startMatch2) ---------- */
-const botLvl = (li) => Math.max(1, Math.min(MAXLVL, Math.round(1 + li * 1.6 + (Math.random() * 1.6 - 0.6))));
-function botPick(k, li) {
-  const l = botLvl(li),
-    abs = [0, 1, 2].filter((i) => l >= AB_REQ[i]);
-  return { cls: k, lvl: l, ab: pickOne(abs), bot: true, skin: Math.random() < 0.35 ? pickOne(skinsOf(k)) : '' };
-}
-const myPick = (k) => ({ cls: k, lvl: S.lv[k], ab: S.lv[k] >= AB_REQ[S.ab[k]] ? S.ab[k] : 0, skin: S.skin[k] || '' });
 /** Roster entry for display before the engine match exists (2v2 pick screen). */
 function rosterOf(p) {
   const maxHp = CLASSES[p.cls].hp * mult(p.lvl);
   return { ...p, hp: maxHp, maxHp, alive: true, revived: false };
 }
-function newMatch(mode, teams) {
-  const M = CK.E.createMatch(mode, (Math.random() * 4294967296) >>> 0, teams, CK.B);
-  M.teams.forEach((t, i) => t.forEach((e, j) => (e.skin = teams[i][j].skin)));
+/** Engine match from the server's setup; skins are cosmetic and chosen here. */
+function newMatch(pick2) {
+  const M = CK.E.matchFromSetup(G.setup, CK.B, pick2);
+  M.teams.forEach((t, i) => t.forEach((e) => (e.skin = withSkin(e, i === 0 && e.bot !== true).skin)));
   return M;
+}
+const withSkin = (p, mine) => ({ ...p, skin: mine ? S.skin[p.cls] || '' : Math.random() < 0.35 ? pickOne(skinsOf(p.cls)) : '' });
+/** Ask the backend for a match (seed + rosters); it later verifies the recorded inputs. */
+async function requestMatch(mode) {
+  const r = await act({ t: 'matchStart', mode });
+  if (!r) return null;
+  return r;
 }
 function baseG(mode, li) {
   return {
     mode, id: Math.random(), emo: [], emoCd: 0, li, round: 0, active: null, lastMap: null, map: null,
     phase: 'mm', done: false, clock: 0, shake: 0, hitstop: 0, slow: 0, lastDead: [null, null],
-    // Bots get smarter as the player's trophies grow (rules.bot.skillCurve).
-    skill: CK.E.botSkillFor(CK.B, S.trophies),
+    log: { rounds: [] },
   }; // prettier-ignore
 }
 function openMatchScreen(li) {
@@ -101,19 +103,20 @@ function openMatchScreen(li) {
   raf = requestAnimationFrame(loop);
 }
 
-function startMatch() {
+async function startMatch() {
   if (S.mode === '2v2') {
     startMatch2();
     return;
   }
+  const req = await requestMatch('1v1');
+  if (!req) return;
   setWorld(CK.B.engine.rules.world1v1);
-  const li = leagueOf(S.trophies),
-    pool = [...KEYS].sort(() => Math.random() - 0.5);
-  const mine = S.team.map(myPick),
-    bots = pool.slice(0, 2).map((k) => botPick(k, li));
+  const li = leagueOf(S.trophies);
   G = baseG('1v1', li);
+  // Bots get smarter as the player's trophies grow; the server decides (setup.botSkill).
+  Object.assign(G, { setup: req.setup, matchId: req.id, skill: req.setup.botSkill });
   G.botName = BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
-  G.M = newMatch('1v1', [mine, bots]);
+  G.M = newMatch(0);
   Object.assign(G, { teams: G.M.teams, score: G.M.score, hist: G.M.hist });
   openMatchScreen(li);
   const mm = $('#mm');
@@ -128,17 +131,19 @@ function startMatch() {
   }, 2600);
 }
 
-function startMatch2() {
+async function startMatch2() {
+  const req = await requestMatch('2v2');
+  if (!req) return;
   setWorld(CK.B.engine.rules.world2v2);
   const li = leagueOf(S.trophies),
-    pool = [...KEYS].filter((k) => !S.team.includes(k)).sort(() => Math.random() - 0.5);
-  const mine = S.team.map(myPick),
-    ally = botPick(pool[0], li),
-    foes = [botPick(pool[1], li), botPick(pool[2], li)],
+    mine = req.setup.teams[0].map((p) => withSkin(p, true)),
+    [ally, ...foes] = req.setup.teams[1].map((p) => withSkin(p, false)),
     nm = [...BOT_NAMES].sort(() => Math.random() - 0.5);
   G = baseG('2v2', li);
   Object.assign(G, {
-    picks: { mine, ally, foes },
+    setup: req.setup,
+    matchId: req.id,
+    skill: req.setup.botSkill,
     teams: [[rosterOf(mine[0]), rosterOf(ally)], foes.map(rosterOf)],
     myOpts: mine.map(rosterOf),
     score: [0, 0],
@@ -182,8 +187,10 @@ function choose2(i) {
   if (!G || G.phase !== 'pick2') return;
   clearTimeout(G.pickT);
   G.phase = 'vs';
-  const P = G.picks;
-  G.M = newMatch('2v2', [[P.mine[i], P.ally], P.foes]);
+  const shown = [[G.myOpts[i], G.teams[0][1]], G.teams[1]];
+  G.M = newMatch(i);
+  G.M.teams.forEach((t, a) => t.forEach((e, b) => (e.skin = shown[a][b].skin)));
+  G.log.rounds.push({ pick: i, inputs: [] });
   Object.assign(G, { teams: G.M.teams, score: G.M.score, hist: G.M.hist });
   beginRound(CK.E.roundConfig(G.M, 'classic', [0, 0], CK.B, { fx: true, botSkill: G.skill }), [
     'تو',
@@ -216,6 +223,7 @@ function choose(i) {
   if (!G || G.phase !== 'pick') return;
   clearTimeout(G.pickT);
   G.phase = 'vs';
+  G.log.rounds.push({ pick: i, inputs: [] });
   const bi = CK.E.botPick(G.M, 1);
   beginRound(CK.E.roundConfig(G.M, G.map.id, [i, bi], CK.B, { fx: true, botSkill: G.skill }), ['تو', G.botName]);
   G.active = G.M.active;
@@ -369,9 +377,12 @@ function update(dt) {
   }
   if ((G.phase !== 'count' && G.phase !== 'fight') || !G.R || G.R.result) return;
   // Fixed-step engine; hitstop/slow-motion only change how fast steps are consumed (presentation).
-  G.acc += dt;
+  G.acc += dt * DEV_SPEED;
   while (G.acc >= SIM_DT && !G.R.result) {
-    onEvents(CK.E.step(G.R, G.inputs.splice(0), CK.B));
+    const inp = G.inputs.splice(0);
+    // Record inputs with the tick they apply on; the backend replays them to verify the result.
+    if (inp.length) G.log.rounds[G.log.rounds.length - 1].inputs.push([G.R.tick, inp]);
+    onEvents(CK.E.step(G.R, inp, CK.B));
     G.acc -= SIM_DT;
   }
   syncView();

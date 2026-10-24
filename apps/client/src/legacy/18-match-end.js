@@ -2,8 +2,11 @@
 function finishMatch(win,quit){
   if(G.done)return;G.done=true;G.ended=true;G.phase='end';clearTimeout(G.pickT);$('#ov').hidden=true;$('#mm').hidden=true;
   // Trophies and chest are decided by the backend (offline: the local fake server).
-  act({t:'match',win,mode:G.mode}).then(r=>{
+  // The backend replays the recorded inputs and decides the result; show its verdict.
+  act({t:'match',id:G.matchId,log:quit?{rounds:G.log.rounds,surrender:true}:G.log}).then(r=>{
   if(!r)return;
+  if(!quit&&(r.win!==win||r.score.join()!==G.score.join()))console.error('replay mismatch',win,G.score,r);
+  win=r.win;
   const {trophies:dt,tier,slot,before,after}=r;
   later(()=>{
     sfx(win?'win':'lose');$('#rTitle').textContent=win?'بردی!':'باختی';$('#rTitle').className=win?'w':'l';

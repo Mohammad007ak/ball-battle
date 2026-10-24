@@ -7,8 +7,18 @@
   "types": "./src/index.ts",
   "dependencies": {
     "@chakachak/content": "workspace:*",
-    "@chakachak/engine": "workspace:*",
     "@chakachak/economy": "workspace:*",
-    "@chakachak/protocol": "workspace:*"
+    "@chakachak/engine": "workspace:*",
+    "@chakachak/protocol": "workspace:*",
+    "fastify": "^5.12.7",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15"
+  },
+  "scripts": {
+    "dev": "SECRET=dev-secret-dev-secret-dev-secret-00 TEST_OTP=12345 DEV_TOOLS=1 tsx watch src/index.ts",
+    "start": "tsx src/index.ts"
   }
 }

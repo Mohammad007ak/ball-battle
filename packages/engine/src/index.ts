@@ -7,3 +7,4 @@ export { MAP_IDS, buildMap } from './maps';
 export { levelMult } from './fighter';
 export { botSkillFor } from './bot';
 export * from './match';
+export * from './replay';

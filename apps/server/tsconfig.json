@@ -1,11 +1,24 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "outDir": "dist", "rootDir": "src", "tsBuildInfoFile": "dist/.tsbuildinfo" },
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "tsBuildInfoFile": "dist/.tsbuildinfo",
+    "types": ["node"]
+  },
   "include": ["src"],
   "references": [
-    { "path": "../../packages/content" },
-    { "path": "../../packages/engine" },
-    { "path": "../../packages/economy" },
-    { "path": "../../packages/protocol" }
+    {
+      "path": "../../packages/content"
+    },
+    {
+      "path": "../../packages/engine"
+    },
+    {
+      "path": "../../packages/economy"
+    },
+    {
+      "path": "../../packages/protocol"
+    }
   ]
 }

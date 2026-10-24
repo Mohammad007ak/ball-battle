@@ -340,3 +340,6 @@ export function matchResult(B: Balance, S: Profile, win: boolean, mode: '1v1' | 
   }
   return { trophies: dt, tier, slot, before, after: leagueOf(B, S.trophies) };
 }
+
+export * from './match';
+export * from './actions';
