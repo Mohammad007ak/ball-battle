@@ -1,0 +1,12 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/content" },
+    { "path": "packages/protocol" },
+    { "path": "packages/engine" },
+    { "path": "packages/economy" },
+    { "path": "apps/client" },
+    { "path": "apps/server" },
+    { "path": "tools/sim" }
+  ]
+}

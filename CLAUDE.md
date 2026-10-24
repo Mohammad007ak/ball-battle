@@ -28,7 +28,7 @@ packages/engine/    Pure simulation. No DOM, no rendering, no network. Shared by
 packages/content/   Data: balance.json, characters, abilities, skins, chests, leagues, i18n strings (fa).
 apps/client/        Vite + TS + Canvas 2D (PixiJS only if profiling demands it). Rendering, UI, audio, input.
                     Packaged with Capacitor (Android first; iOS later) and as a PWA.
-apps/server/        Node + Colyseus (rooms/matchmaking) + PostgreSQL (Drizzle or Prisma) + Redis.
+apps/server/        Node + Colyseus (rooms/matchmaking) + SQLite (Drizzle, WAL, file on persistent volume). No separate DB/Redis.
 apps/admin/         (later) Live-ops panel: remote config, daily shop, player support.
 tools/sim/          Headless balance simulator + auto-tuner (port of the prototype's).
 ```
@@ -57,4 +57,14 @@ tools/sim/          Headless balance simulator + auto-tuner (port of the prototy
 - When a number in the prototype looks wrong, ask — do not change it.
 
 ## Commands
-_(Fill in after Phase 1 scaffolding: install, dev client, dev server, test, sim, build android.)_
+```
+pnpm install        # install all workspaces
+pnpm dev:client     # Vite dev server for apps/client
+pnpm dev:server     # (Phase 4) API + Colyseus
+pnpm test           # Vitest, all packages
+pnpm typecheck      # tsc -b (project references)
+pnpm lint           # ESLint (engine purity rules included)
+pnpm format         # Prettier
+pnpm sim            # (Phase 2) balance simulator
+```
+Android build commands are added in Phase 6.
