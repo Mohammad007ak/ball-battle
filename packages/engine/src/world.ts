@@ -237,6 +237,6 @@ export function spawnPup(c: Ctx) {
       b.botT = Math.min(
         b.botT,
         Q.pupReact +
-          Math.max(Q.pupReactMin, Q.pupReactBase - s.botLevel * Q.pupReactPerLeague) * rand(c),
+          Math.max(Q.pupReactMin, Q.pupReactBase - b.skill * Q.pupReactPerSkill) * rand(c),
       );
 }

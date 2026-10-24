@@ -16,6 +16,8 @@ export interface FighterSpec {
   revived?: boolean;
   /** Engine drives this fighter with the built-in bot. */
   bot?: boolean;
+  /** Bot skill 0..1; defaults to the round's `botSkill`. */
+  skill?: number;
 }
 
 export interface RoundConfig {
@@ -24,8 +26,8 @@ export interface RoundConfig {
   map: MapId;
   fighters: FighterSpec[];
   balance: Balance;
-  /** Bot difficulty, the league index 0..4 in the prototype. */
-  botLevel?: number;
+  /** Bot skill 0..1, from the human player's trophies (see `botSkillFor`). 0 plays like the prototype's first league. */
+  botSkill?: number;
   /** Emit cosmetic events (rings, bursts, texts). Off on the server and in the simulator. */
   fx?: boolean;
 }
@@ -37,6 +39,10 @@ export interface Fighter {
   m: number;
   team: 0 | 1;
   bot: boolean;
+  /** Bot skill 0..1. */
+  skill: number;
+  /** Seconds a skilled bot has been holding a ready ability for a better moment. */
+  botHold: number;
   out: boolean;
   ab: number;
   r: number;
@@ -239,7 +245,6 @@ export interface RoundState {
   time: number;
   ins: number;
   shrinkWarned: boolean;
-  botLevel: number;
   rng: Rng;
   map: MapState;
   f: Fighter[];

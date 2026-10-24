@@ -106,7 +106,7 @@ export function roundConfig(
   map: MapId,
   picks: [number, number],
   B: Balance,
-  opts: { botLevel?: number; fx?: boolean } = {},
+  opts: { botSkill?: number; fx?: boolean } = {},
 ): RoundConfig {
   m.round++;
   const fighters =

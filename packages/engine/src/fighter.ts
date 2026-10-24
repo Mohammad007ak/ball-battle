@@ -30,6 +30,8 @@ export function makeFighter(
     m,
     team: spec.team,
     bot: !!spec.bot,
+    skill: spec.skill ?? 0,
+    botHold: 0,
     out: false,
     ab: spec.ab,
     r: ('r' in C ? (C.r as number) : 0) || R.defaultRadius,

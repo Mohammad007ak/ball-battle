@@ -19,7 +19,8 @@ export function createRound(cfg: RoundConfig): RoundState {
     R = B.engine.rules,
     W = cfg.mode === '2v2' ? R.world2v2 : R.world1v1,
     rng = createRng(cfg.seed);
-  const f = cfg.fighters.map((spec, id) => {
+  const f = cfg.fighters.map((sp, id) => {
+    const spec = { ...sp, skill: sp.skill ?? cfg.botSkill ?? 0 };
     if (cfg.mode === '2v2') {
       const p = R.spawn2v2[id]!;
       return makeFighter(B, rng, id, spec, W * p[0]!, () => W * p[1]!);
@@ -37,7 +38,6 @@ export function createRound(cfg: RoundConfig): RoundState {
     time: 0,
     ins: 0,
     shrinkWarned: false,
-    botLevel: cfg.botLevel ?? 0,
     rng,
     map: buildMap(cfg.map, W, W, B.engine.maps),
     f,
