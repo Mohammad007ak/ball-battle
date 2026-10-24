@@ -5,7 +5,7 @@ import { skillWinRate } from './skill';
 
 it('bot skill follows trophies', () => {
   expect(botSkillFor(B, 0)).toBe(0);
-  expect(botSkillFor(B, 500)).toBeCloseTo(0.375);
+  expect(botSkillFor(B, 1500)).toBeCloseTo(0.5);
   expect(botSkillFor(B, 5000)).toBe(1);
 });
 

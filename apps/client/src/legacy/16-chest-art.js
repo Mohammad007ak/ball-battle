@@ -16,6 +16,9 @@ function gemShape(c,x,y,r,col){c.save();c.shadowColor=col;c.shadowBlur=r*1.6;c.f
   c.strokeStyle='rgba(0,0,0,.35)';c.lineWidth=Math.max(0.8,r*0.12);c.beginPath();c.moveTo(x,y-r);c.lineTo(x+r*0.8,y-r*0.2);c.lineTo(x,y+r);c.lineTo(x-r*0.8,y-r*0.2);c.closePath();c.stroke();c.restore()}
 function drawChest(c,x,y,s,tier,o){
   o=o||{};
+  const art=artImg(o.open>0.35?`chest-${tier}-open`:`chest-${tier}`);
+  if(art){const bot=y+s*0.3,D=s*1.18;c.save();c.fillStyle='rgba(0,0,0,.38)';c.beginPath();c.ellipse(x,bot+s*0.015,s*0.5,s*0.06,0,0,TAU);c.fill();
+    c.drawImage(art,x-D/2,bot-D*0.86,D,D);c.restore();return}
   const P=CHEST_PAL[tier],open=o.open||0,w=s,bh=s*0.38,lh=s*0.3,bx=x-w/2,bot=y+s*0.3,top=bot-bh,rad=s*0.05,lw=Math.max(1,s*0.016);
   const cbw=w*0.1,cbx=[bx+w*0.07,bx+w*0.93-cbw];
   c.save();
@@ -72,8 +75,9 @@ function drawChest(c,x,y,s,tier,o){
   c.restore();
 }
 const CICON={};
-function chestIcon(t){if(CICON[t]==null){const k=document.createElement('canvas');k.width=k.height=160;drawChest(k.getContext('2d'),80,84,124,t,{sparkle:true});try{CICON[t]=k.toDataURL('image/png')}catch(e){CICON[t]=''}}return CICON[t]}
+function chestIcon(t){const u=artUrl('chest-'+t);if(u)return u;if(CICON[t]==null){const k=document.createElement('canvas');k.width=k.height=160;drawChest(k.getContext('2d'),80,84,124,t,{sparkle:true});try{CICON[t]=k.toDataURL('image/png')}catch(e){CICON[t]=''}}return CICON[t]}
 function drawCoin3d(c,x,y,r){
+  const ci=artImg('coin');if(ci){c.drawImage(ci,x-r*1.1,y-r*1.1,r*2.2,r*2.2);return}
   c.fillStyle='#9a5f06';c.beginPath();c.ellipse(x,y+r*0.22,r,r*0.42,0,0,TAU);c.fill();
   c.fillRect(x-r,y,2*r,r*0.22);
   const g=c.createRadialGradient(x-r*0.3,y-r*0.15,1,x,y,r);g.addColorStop(0,'#fff3c4');g.addColorStop(0.5,'#ffc53d');g.addColorStop(1,'#c58306');
@@ -81,6 +85,7 @@ function drawCoin3d(c,x,y,r){
   c.strokeStyle='rgba(255,240,190,.8)';c.lineWidth=Math.max(1,r*0.08);c.beginPath();c.ellipse(x,y,r*0.7,r*0.28,0,0,TAU);c.stroke();
 }
 function drawGem3d(c,x,y,r){
+  const gi=artImg('gem');if(gi){c.drawImage(gi,x-r*1.1,y-r*1.1,r*2.2,r*2.2);return}
   const pts=[[-0.6,-0.45],[0.6,-0.45],[1,0],[0,1],[-1,0]];
   c.save();c.translate(x,y);
   c.beginPath();pts.forEach(([a,b],i)=>i?c.lineTo(a*r,b*r):c.moveTo(a*r,b*r));c.closePath();
@@ -91,9 +96,10 @@ function drawGem3d(c,x,y,r){
   c.restore();
 }
 let GEMI=null;
-function gemIcon(){if(GEMI==null){const k=document.createElement('canvas');k.width=k.height=120;const c=k.getContext('2d');c.save();c.shadowColor='#34d399';c.shadowBlur=16;drawGem3d(c,60,56,40);c.restore();try{GEMI=k.toDataURL('image/png')}catch(e){GEMI=''}}return GEMI}
+function gemIcon(){const u=artUrl('gem');if(u)return u;if(GEMI==null){const k=document.createElement('canvas');k.width=k.height=120;const c=k.getContext('2d');c.save();c.shadowColor='#34d399';c.shadowBlur=16;drawGem3d(c,60,56,40);c.restore();try{GEMI=k.toDataURL('image/png')}catch(e){GEMI=''}}return GEMI}
 let COINI=null;
 function coinIcon(){
+  const u=artUrl('coin');if(u)return u;
   if(COINI==null){const k=document.createElement('canvas');k.width=k.height=120;const c=k.getContext('2d');
     c.fillStyle='rgba(0,0,0,.3)';c.beginPath();c.ellipse(60,106,34,7,0,0,TAU);c.fill();
     c.save();c.shadowColor='#ffc53d';c.shadowBlur=18;const g=c.createRadialGradient(48,44,4,60,60,44);g.addColorStop(0,'#fff3c4');g.addColorStop(0.45,'#ffc53d');g.addColorStop(1,'#b8730c');c.fillStyle=g;circ(c,60,60,42);c.fill();c.restore();

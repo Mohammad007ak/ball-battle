@@ -9,7 +9,10 @@ const ARENA_CACHE={};
 function arenaCanvas(li,px){
   const key=li+'_'+px;if(ARENA_CACHE[key])return ARENA_CACHE[key];
   const c=document.createElement('canvas');c.width=c.height=px;const b=c.getContext('2d');
-  const sw=W;W=H=360;M=14;VW=388;b.setTransform(px/VW,0,0,px/VW,0,0);paintArena(b,li);setWorld(sw);
+  // Arena art from the league's image when present, otherwise the prototype's canvas painting.
+  const A=ARENAS[li]||ARENAS[ARENAS.length-1],im=A.art&&artImg(A.art.replace(/\.webp$/,''));
+  if(im){b.drawImage(im,0,0,px,px);return ARENA_CACHE[key]=c}
+  const sw=W;W=H=360;M=14;VW=388;b.setTransform(px/VW,0,0,px/VW,0,0);paintArena(b,A.paint!=null?A.paint:li%5);setWorld(sw);
   return ARENA_CACHE[key]=c;
 }
 function sizeCanvas(){

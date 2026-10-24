@@ -30,6 +30,7 @@ function renderBattle(){
   const li=leagueOf(S.trophies),L=LEAGUES[li],N=LEAGUES[li+1],A=ARENAS[li];
   $('#coins').textContent=fa(S.coins);$('#gems').textContent=fa(S.gems);$('#trophies').textContent=fa(S.trophies);
   $('#leagueName').textContent='لیگ '+L.name;$('#leagueBadge').style.setProperty('--lc',L.color);
+  const bu=artUrl('league-'+(L.badge||0));$('#leagueBadge').classList.toggle('art',!!bu);if(bu)$('#leagueBadge svg').style.backgroundImage=`url(${bu})`;
   document.body.style.setProperty('--tint',A.accent);
   $('#arenaNo').textContent='آرنای '+fa(li+1)+'، لیگ '+L.name;$('#arenaName').textContent=A.name;
   $('#ladderFill').style.width=(N?(S.trophies-L.min)/(N.min-L.min)*100:100)+'%';

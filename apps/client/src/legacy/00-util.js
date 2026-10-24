@@ -5,3 +5,6 @@ const sgn=n=>(n>0?'+':n<0?'−':'')+fa(Math.abs(n));
 const TAU=Math.PI*2;
 const reduceMotion=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+// Generated art (src/art.ts); null when an image is missing, so callers keep the canvas art.
+const artImg=n=>(CK.ART&&CK.ART.img[n])||null;
+const artUrl=n=>artImg(n)?CK.ART.url(n):null;

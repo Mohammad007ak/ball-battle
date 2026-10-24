@@ -12,10 +12,13 @@ import { EconomyError, leagueOf, matchResult, type Profile, type Rand } from './
 
 const pickOf = <T>(a: T[], rand: Rand) => a[Math.floor(rand() * a.length)]!;
 
-/** Bot opponent card at the player's league (prototype `startMatch`: level ≈ 1 + 1.6 × league). */
+/** Bot opponent card at the player's league: level ≈ 1 + ECON.botLvlPerLeague × league (prototype: 1.6 with 5 leagues). */
 function botCard(B: Balance, k: ClassKey, li: number, rand: Rand): Pick {
   const G = B.game,
-    lvl = Math.max(1, Math.min(G.MAXLVL, Math.round(1 + li * 1.6 + (rand() * 1.6 - 0.6)))),
+    lvl = Math.max(
+      1,
+      Math.min(G.MAXLVL, Math.round(1 + li * G.ECON.botLvlPerLeague + (rand() * 1.6 - 0.6))),
+    ),
     abs = [0, 1, 2].filter((i) => lvl >= G.AB_REQ[i]!) as (0 | 1 | 2)[];
   return { cls: k, lvl, ab: pickOf(abs, rand), bot: true };
 }

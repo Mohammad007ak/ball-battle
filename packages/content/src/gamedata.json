@@ -814,51 +814,132 @@
   ],
   "LEAGUES": [
     {
-      "name": "برنز",
+      "name": "برنز ۱",
       "min": 0,
-      "color": "#d08a52"
+      "color": "#d08a52",
+      "badge": 0
     },
     {
-      "name": "نقره",
-      "min": 300,
-      "color": "#c3cbdc"
+      "name": "برنز ۲",
+      "min": 200,
+      "color": "#d08a52",
+      "badge": 0
     },
     {
-      "name": "طلا",
-      "min": 700,
-      "color": "#ffc53d"
+      "name": "نقره ۱",
+      "min": 450,
+      "color": "#c3cbdc",
+      "badge": 1
     },
     {
-      "name": "الماس",
-      "min": 1200,
-      "color": "#6ee7f9"
+      "name": "نقره ۲",
+      "min": 750,
+      "color": "#c3cbdc",
+      "badge": 1
     },
     {
-      "name": "قهرمان",
+      "name": "طلا ۱",
+      "min": 1100,
+      "color": "#ffc53d",
+      "badge": 2
+    },
+    {
+      "name": "طلا ۲",
+      "min": 1500,
+      "color": "#ffc53d",
+      "badge": 2
+    },
+    {
+      "name": "الماس ۱",
       "min": 2000,
-      "color": "#ff7ad9"
+      "color": "#6ee7f9",
+      "badge": 3
+    },
+    {
+      "name": "الماس ۲",
+      "min": 2600,
+      "color": "#6ee7f9",
+      "badge": 3
+    },
+    {
+      "name": "قهرمان ۱",
+      "min": 3300,
+      "color": "#ff7ad9",
+      "badge": 4
+    },
+    {
+      "name": "قهرمان ۲",
+      "min": 4000,
+      "color": "#ff7ad9",
+      "badge": 4
     }
   ],
   "ARENAS": [
     {
-      "name": "کاروانسرا",
-      "accent": "#e9a15b"
+      "name": "ساحل خزر",
+      "accent": "#9fb7c9",
+      "alt": -28,
+      "paint": 0,
+      "art": "arena-0.webp"
+    },
+    {
+      "name": "جزیرهٔ هرمز",
+      "accent": "#ff8a5c",
+      "alt": 0,
+      "paint": 4,
+      "art": "arena-1.webp"
+    },
+    {
+      "name": "کلوت‌های لوت",
+      "accent": "#e9a15b",
+      "alt": 300,
+      "paint": 0,
+      "art": "arena-2.webp"
+    },
+    {
+      "name": "ماسوله",
+      "accent": "#ffd166",
+      "alt": 1050,
+      "paint": 2,
+      "art": "arena-3.webp"
+    },
+    {
+      "name": "یزد",
+      "accent": "#e9a15b",
+      "alt": 1200,
+      "paint": 0,
+      "art": "arena-4.webp"
+    },
+    {
+      "name": "نقش جهان اصفهان",
+      "accent": "#38bdf8",
+      "alt": 1570,
+      "paint": 2,
+      "art": "arena-5.webp"
+    },
+    {
+      "name": "تخت جمشید",
+      "accent": "#d6b98c",
+      "alt": 1600,
+      "paint": 0
+    },
+    {
+      "name": "قلهٔ توچال",
+      "accent": "#bfe3ff",
+      "alt": 3960,
+      "paint": 1
+    },
+    {
+      "name": "دریاچهٔ سبلان",
+      "accent": "#67e8f9",
+      "alt": 4810,
+      "paint": 3
     },
     {
       "name": "قلهٔ دماوند",
-      "accent": "#bfe3ff"
-    },
-    {
-      "name": "باغ ارم",
-      "accent": "#ffd166"
-    },
-    {
-      "name": "غار بلور",
-      "accent": "#c084fc"
-    },
-    {
-      "name": "قلعهٔ آتشفشان",
-      "accent": "#ff7a3d"
+      "accent": "#fde68a",
+      "alt": 5609,
+      "paint": 1
     }
   ],
   "PUPS": {
@@ -1631,6 +1712,7 @@
   "ECON": {
     "skipSecPerGem": 360,
     "lossChest": false,
-    "leagueBonus": 0.25
+    "leagueBonus": 0.12,
+    "botLvlPerLeague": 0.8
   }
 }

@@ -3429,3 +3429,15 @@ body {
 body[data-offline]::before{content:"در حال اتصال به سرور…";position:fixed;inset:0;display:grid;place-items:center;z-index:99;background:#0c1d4f;color:#fff;font-family:var(--display);font-size:22px}
 .phin{width:100%;padding:10px 14px;border-radius:14px;border:2px solid var(--ink);background:rgba(4,10,34,.7);color:#fff;font:inherit;font-size:20px;text-align:center;letter-spacing:2px;direction:ltr}
 .acct small{display:block;text-align:center;margin-bottom:6px}
+
+/* ===== generated art (public/art, see tools/art/cut.py) ===== */
+body{background:linear-gradient(180deg,rgba(10,20,60,.25),rgba(10,20,60,.55)) fixed,url(/art/menu-bg.webp) center top/cover fixed,#0c1d4f}
+.coin-ico{background:url(/art/coin.webp) center/contain no-repeat;box-shadow:none;border-radius:0}
+svg.gm{background:url(/art/gem.webp) center/contain no-repeat}
+svg.gm>*{display:none}
+.lbadge.art svg{background:center/contain no-repeat}
+.lbadge.art svg>*{display:none}
+svg.tro{background:url(/art/trophy.webp) center/contain no-repeat}
+svg.tro>*{display:none}
+#boot{position:fixed;inset:0;z-index:100;background:#0c1d4f url(/art/splash.webp) center/cover no-repeat;transition:opacity .4s}
+#boot.gone{opacity:0;pointer-events:none}

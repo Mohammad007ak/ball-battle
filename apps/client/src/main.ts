@@ -4,6 +4,7 @@ import '@fontsource/vazirmatn/600.css';
 import '@fontsource/vazirmatn/800.css';
 import './styles/game.css';
 import { defaultBalance } from '@chakachak/content';
+import { loadArt } from './art';
 import { makeBridge } from './bridge';
 import type { Backend } from './net/backend';
 import { HttpBackend } from './net/http-backend';
@@ -28,6 +29,6 @@ if (api) {
   backend = http;
 } else backend = new LocalBackend(defaultBalance);
 
-(globalThis as unknown as { CK: unknown }).CK = makeBridge(backend, balance);
+(globalThis as unknown as { CK: unknown }).CK = makeBridge(backend, balance, await loadArt(balance));
 // The prototype-ported UI, concatenated into one module by vite.config.ts.
 await import('virtual:legacy');
