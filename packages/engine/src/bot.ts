@@ -6,7 +6,11 @@ import { nudge } from './fighter';
 import type { Fighter } from './types';
 import { hypot } from './dmath';
 
-/** Bot skill 0..1 for a player's trophy count (piecewise linear over `rules.bot.skillCurve`). */
+/**
+ * Bot skill -1..1 for a player's trophy count (piecewise linear over `rules.bot.skillCurve`).
+ * Below 0 is "ease" for new players: the bot boosts less often, fires its ability later and aims
+ * worse, so a beginner wins most early games. At 0 and above nothing changes.
+ */
 export function botSkillFor(B: Balance, trophies: number): number {
   const pts = B.engine.rules.bot.skillCurve as number[][];
   if (trophies <= pts[0]![0]!) return pts[0]![1]!;
@@ -61,7 +65,8 @@ function incoming(c: Ctx, B: Fighter, look: number) {
 export function botThink(c: Ctx, B: Fighter, A: Fighter, dt: number) {
   const K = c.R.bot,
     S = K.smart,
-    sk = B.skill;
+    sk = Math.max(0, B.skill),
+    ease = Math.max(0, -B.skill);
   if (B.abilityCd <= 0) {
     B.aiDelay -= dt;
     if (B.aiDelay <= 0) {
@@ -70,7 +75,7 @@ export function botThink(c: Ctx, B: Fighter, A: Fighter, dt: number) {
         B.botHold = 0;
         const lo = lerp(K.abilityRedelay[0]!, S.abilityDelay[0]!, sk),
           span = lerp(K.abilityRedelay[1]!, S.abilityDelay[1]! - S.abilityDelay[0]!, sk);
-        B.aiDelay = lo + rand(c) * span;
+        B.aiDelay = (lo + rand(c) * span) * (1 + ease * K.easeAbility);
       } else B.botHold += dt;
     }
   }
@@ -105,6 +110,11 @@ export function botThink(c: Ctx, B: Fighter, A: Fighter, dt: number) {
     const lead = lerp(K.lead, S.leadMax, sk);
     tx = A.x + A.vx * lead;
     ty = A.y + A.vy * lead;
+    // Only an eased bot draws extra randoms, so skill >= 0 keeps its exact random sequence.
+    if (ease > 0) {
+      tx += (rand(c) - 0.5) * ease * K.easeAim * 2;
+      ty += (rand(c) - 0.5) * ease * K.easeAim * 2;
+    }
   } else {
     const dx = B.x - A.x,
       dy = B.y - A.y,
@@ -121,5 +131,7 @@ export function botThink(c: Ctx, B: Fighter, A: Fighter, dt: number) {
     );
   }
   nudge(c, B, tx, ty);
-  B.botT = Math.max(K.boostMin, K.boostBase - sk * K.boostPerSkill) + rand(c) * K.boostJitter;
+  B.botT =
+    (Math.max(K.boostMin, K.boostBase - sk * K.boostPerSkill) + rand(c) * K.boostJitter) *
+    (1 + ease * K.easeBoost);
 }

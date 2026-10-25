@@ -36,12 +36,18 @@ export function matchSetup(B: Balance, S: Profile, mode: '1v1' | '2v2', rand: Ra
     const j = Math.floor(rand() * (i + 1));
     [pool[i], pool[j]] = [pool[j]!, pool[i]!];
   }
-  const bots = pool.slice(0, mode === '1v1' ? 2 : 3).map((k) => botCard(B, k, li, rand));
+  const botSkill = botSkillFor(B, S.trophies),
+    weakest = Math.min(...mine.map((p) => p.lvl));
+  // While the bot is eased (new players), its cards are never above the player's weakest card.
+  const bots = pool
+    .slice(0, mode === '1v1' ? 2 : 3)
+    .map((k) => botCard(B, k, li, rand))
+    .map((p) => (botSkill < 0 && p.lvl > weakest ? { ...p, lvl: weakest, ab: 0 as const } : p));
   return {
     mode,
     seed: Math.floor(rand() * 4294967296),
     teams: [mine, bots],
-    botSkill: botSkillFor(B, S.trophies),
+    botSkill,
   };
 }
 
