@@ -68,7 +68,8 @@ describe('online 1v1', () => {
     const pa = loadProfile(w.ctx, a!),
       pb = loadProfile(w.ctx, b!);
     expect(pa.trophies + pb.trophies).toBe(30); // winner +30, loser at 0 stays 0
-    expect(A.msgs.some((m) => m.t === 'snap')).toBe(true);
+    expect(A.msgs.some((m) => m.t === 'tk')).toBe(true);
+    expect(A.msgs.some((m) => m.t === 'state')).toBe(true);
   });
 
   it('without an opponent the player is told to play the bot match locally', async () => {

@@ -6,7 +6,7 @@ import { createMatch } from '@chakachak/engine';
 import { Room, type Seat } from '../../../apps/server/src/online/room';
 
 /**
- * Load test: N concurrent online matches (bot vs bot, full engine + snapshots, real 60 Hz clock)
+ * Load test: N concurrent online matches (bot vs bot, full engine + input relay and state sync, real 60 Hz clock)
  * in one process, as the server runs them. Reports CPU, memory and outgoing bandwidth.
  */
 const { values: o } = parseArgs({

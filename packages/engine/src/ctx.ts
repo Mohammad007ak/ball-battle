@@ -2,6 +2,7 @@ import type { Balance, ClassDef, EngineData } from '@chakachak/content';
 import type { GameEvent } from './events';
 import { next } from './rng';
 import type { Fighter, RoundState } from './types';
+import { hypot } from './dmath';
 
 /** Per-step context: state plus read-only balance and the event sink. */
 export interface Ctx {
@@ -30,7 +31,7 @@ export function other(c: Ctx, f: Fighter): Fighter {
   let bd = 1e9;
   for (const e of c.s.f) {
     if (e.team === f.team) continue;
-    const d = (e.hp > 0 && !e.out ? 0 : 1e6) + Math.hypot(e.x - f.x, e.y - f.y);
+    const d = (e.hp > 0 && !e.out ? 0 : 1e6) + hypot(e.x - f.x, e.y - f.y);
     if (d < bd) {
       bd = d;
       best = e;

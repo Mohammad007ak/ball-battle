@@ -17,6 +17,7 @@ import {
   wrapAngle,
 } from './ctx';
 import { arrowMap, clearOfMap } from './maps';
+import { atan2, cos, hypot, sin } from './dmath';
 
 const ZCOL = {
   fire: '#fb7185',
@@ -42,7 +43,7 @@ export function worldTick(c: Ctx, dt: number) {
         Bf = live[j]!;
       const dx = Bf.x - A.x,
         dy = Bf.y - A.y,
-        d = Math.hypot(dx, dy),
+        d = hypot(dx, dy),
         mn = A.r + Bf.r;
       if (!(d < mn && d > 0)) continue;
       const nx = dx / d,
@@ -72,12 +73,12 @@ export function worldTick(c: Ctx, dt: number) {
     const owner = fighter(c, ar.owner),
       e = other(c, owner);
     if (ar.home && e.invisT <= 0 && e.hp > 0) {
-      const cur = Math.atan2(ar.vy, ar.vx),
-        df = wrapAngle(Math.atan2(e.y - ar.y, e.x - ar.x) - cur),
-        sp = Math.hypot(ar.vx, ar.vy),
+      const cur = atan2(ar.vy, ar.vx),
+        df = wrapAngle(atan2(e.y - ar.y, e.x - ar.x) - cur),
+        sp = hypot(ar.vx, ar.vy),
         na = cur + clamp(df, -ar.home * dt, ar.home * dt);
-      ar.vx = Math.cos(na) * sp;
-      ar.vy = Math.sin(na) * sp;
+      ar.vx = cos(na) * sp;
+      ar.vy = sin(na) * sp;
     }
     ar.x += ar.vx * dt;
     ar.y += ar.vy * dt;
@@ -85,7 +86,7 @@ export function worldTick(c: Ctx, dt: number) {
     arrowMap(c, ar);
     if (ar.life <= 0) continue;
     const hitE = foesOf(c, owner).find(
-      (q) => q.invisT <= 0 && Math.hypot(ar.x - q.x, ar.y - q.y) < q.r + ar.rad,
+      (q) => q.invisT <= 0 && hypot(ar.x - q.x, ar.y - q.y) < q.r + ar.rad,
     );
     if (hitE) {
       ar.life = 0;
@@ -136,7 +137,7 @@ export function worldTick(c: Ctx, dt: number) {
     const owner = fighter(c, mn.owner),
       trig = mn.kind ? R.flowerTrigger : R.mineTrigger;
     const e = foesOf(c, owner).find(
-      (q) => q.invisT <= 0 && Math.hypot(mn.x - q.x, mn.y - q.y) < q.r + trig,
+      (q) => q.invisT <= 0 && hypot(mn.x - q.x, mn.y - q.y) < q.r + trig,
     );
     if (mn.arm <= 0 && e) {
       explode(
@@ -167,7 +168,7 @@ export function worldTick(c: Ctx, dt: number) {
     z.life -= dt;
     if (z.home) {
       const e = other(c, fighter(c, z.owner)),
-        dd = Math.hypot(e.x - z.x, e.y - z.y) || 1;
+        dd = hypot(e.x - z.x, e.y - z.y) || 1;
       z.x += ((e.x - z.x) / dd) * z.home * dt;
       z.y += ((e.y - z.y) / dd) * z.home * dt;
     }
@@ -180,7 +181,7 @@ export function worldTick(c: Ctx, dt: number) {
     for (const z of s.zones) {
       const zo = fighter(c, z.owner);
       if (zo.team === f.team) continue;
-      if (Math.hypot(z.x - f.x, z.y - f.y) < f.r + z.r * R.zoneHitFactor) {
+      if (hypot(z.x - f.x, z.y - f.y) < f.r + z.r * R.zoneHitFactor) {
         const v = z.dps * zo.m;
         if (v > bv) {
           bv = v;
@@ -217,7 +218,7 @@ export function spawnPup(c: Ctx) {
     if (!clearOfMap(c, tx, ty)) continue;
     bx = tx;
     by = ty;
-    if (s.f.every((f) => Math.hypot(f.x - tx, f.y - ty) > K.playerClear)) {
+    if (s.f.every((f) => hypot(f.x - tx, f.y - ty) > K.playerClear)) {
       x = tx;
       y = ty;
       found = true;

@@ -3,6 +3,7 @@ import type { Ctx } from './ctx';
 import { TAU, cls, emit, ring } from './ctx';
 import { next, type Rng } from './rng';
 import type { Fighter, FighterSpec } from './types';
+import { atan2, cos, sin } from './dmath';
 
 /** Card level multiplier on hp and damage: 1 + 0.09 × (level − 1). */
 export const levelMult = (B: Balance, lvl: number) =>
@@ -37,8 +38,8 @@ export function makeFighter(
     r: ('r' in C ? (C.r as number) : 0) || R.defaultRadius,
     x,
     y: yy,
-    vx: Math.cos(a) * C.speed,
-    vy: Math.sin(a) * C.speed,
+    vx: cos(a) * C.speed,
+    vy: sin(a) * C.speed,
     hp: spec.hp ?? maxHp,
     maxHp,
     hitCd: 0,
@@ -109,10 +110,10 @@ export function makeFighter(
 export function nudge(c: Ctx, f: Fighter, tx: number, ty: number): boolean {
   if (c.s.phase !== 'fight' || f.charges < 1 || f.out || f.hp <= 0) return false;
   f.charges--;
-  const a = Math.atan2(ty - f.y, tx - f.x),
+  const a = atan2(ty - f.y, tx - f.x),
     C = cls(c, f);
-  f.vx = Math.cos(a) * C.speed;
-  f.vy = Math.sin(a) * C.speed;
+  f.vx = cos(a) * C.speed;
+  f.vy = sin(a) * C.speed;
   f.boostT = c.B.game.BOOST_TIME;
   ring(c, f.x, f.y, f.r, C.c1, 0.35, 3);
   emit(c, { e: 'boost', fid: f.id, a });

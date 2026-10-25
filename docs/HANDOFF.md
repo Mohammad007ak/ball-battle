@@ -52,6 +52,12 @@ Tests: `pnpm test` (116 green), `pnpm typecheck`, `pnpm lint`, `pnpm sim --full 
   (`rules.aspect`, re-tuned balance), painted arenas (arena photos unused), menu backdrop removed,
   loading screen with logo + progress (`src/boot.ts`), starter chest of 2 random commons,
   phone login hidden without SMS, startup hardening.
+- [x] Online netcode reworked: the server relays inputs with their apply tick (on arrival, ~6 ticks
+  early), a tick clock (`tk`, 30/s) and the full state once a second; phones run the same engine
+  locally (`21-online.js`: confirmed state C + presented state P, rebuild + smoothing on mismatch).
+  Engine uses `dmath.ts` (fdlibm sin/cos/atan2, sqrt hypot) so Node and WebView are bit-identical
+  (lint forbids Math.sin & co. in the engine). Bot fallback runs locally (`noOpponent`).
+  ~0.8 KB/s per player. Own taps show after RTT + 100 ms input delay (own-input prediction = later).
 - [ ] 2. IAP (Poolakey / Myket native plugins + server verification), 3. shop UI, 6. size, 7. release
   (`docs/RELEASE.md` started). App id `ir.chakachak.game` still unconfirmed; gem pack prices unknown.
 - Sandbox note: Maven Central returned 429 here; a local `~/.gradle/init.d` mirror script was used (not in repo).

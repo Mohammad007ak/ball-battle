@@ -6,12 +6,10 @@ import {
   nextMap,
   roundConfig,
   step,
-  type GameEvent,
   type Input,
   type MatchState,
   type RoundState,
 } from '@chakachak/engine';
-import { encodeSnapshot } from '@chakachak/protocol';
 
 /** One side of an online match: a connected player, or a server bot (also used after a disconnect). */
 export interface Seat {
@@ -34,7 +32,10 @@ export const T = {
   finishPrompt: 3600,
   finisher: 6500,
   inputDelayTicks: 6, // ~100 ms, masked by the client's wind-up animation
-  snapEvery: 2, // 60 Hz sim → 30 snapshots/s (smoother motion; ~50% more bandwidth)
+  /** Tick clock for the clients' playback, every N ticks. */
+  clockEvery: 2,
+  /** Full state as a safety net against any client-side divergence, every N ticks (~5 KB). */
+  stateEvery: 60,
   reconnect: 15_000,
   emoteGap: 2500,
 } as const;
@@ -51,7 +52,6 @@ export class Room {
   picks: (number | null)[] = [null, null];
   winner: 0 | 1 | null = null;
   private queued: { tick: number; seat: 0 | 1; input: Input }[] = [];
-  private evBuf: GameEvent[] = [];
   private emoAt = [0, 0];
   private finW: 0 | 1 = 0;
 
@@ -90,8 +90,23 @@ export class Room {
     if (this.phase === 'reveal')
       this.to(i, { t: 'reveal', round: this.m.round + 1, map: this.map });
     if (this.phase === 'pick') this.to(i, { t: 'pick', left: this.phaseEnd - this.now() });
-    if (this.round && (this.phase === 'round' || this.phase === 'vs'))
-      this.to(i, { t: 'round', map: this.map, active: this.m.active, fighters: this.round.f });
+    if (this.round && (this.phase === 'round' || this.phase === 'vs')) this.to(i, this.roundMsg());
+  }
+  /**
+   * Clients run the same deterministic engine: they get the full round state plus every input
+   * with the tick it applies on (sent on arrival, i.e. before it is applied thanks to the input
+   * delay), so they simulate exactly what the server does, smoothly at their own frame rate.
+   */
+  private roundMsg() {
+    const s = this.round!;
+    return {
+      t: 'round',
+      map: this.map,
+      active: this.m.active,
+      fighters: s.f,
+      s,
+      q: this.queued.map((q) => [q.tick, q.input]),
+    };
   }
 
   /* ---------- flow ---------- */
@@ -126,7 +141,7 @@ export class Room {
     this.round = createRound(cfg);
     this.queued = [];
     this.set('vs', T.vs);
-    this.all({ t: 'round', map: this.map, active: this.m.active, fighters: this.round.f });
+    this.all(this.roundMsg());
   }
 
   isBot(i: 0 | 1) {
@@ -138,16 +153,19 @@ export class Room {
   tick() {
     const now = this.now();
     // A seat that stayed away too long becomes a bot for the rest of the match.
-    if (this.round) for (const i of [0, 1] as const) if (this.isBot(i)) this.round.f[i]!.bot = true;
+    if (this.round)
+      for (const i of [0, 1] as const)
+        if (this.isBot(i) && !this.round.f[i]!.bot) {
+          this.round.f[i]!.bot = true;
+          this.all({ t: 'bot', seat: i, k: this.round.tick });
+        }
     if (this.phase === 'round' && this.round) {
       const s = this.round;
       const inputs = this.queued.filter((q) => q.tick <= s.tick).map((q) => q.input);
       this.queued = this.queued.filter((q) => q.tick > s.tick);
-      this.evBuf.push(...step(s, inputs, this.B));
-      if (s.tick % T.snapEvery === 0 || s.result) {
-        this.all({ t: 'snap', s: encodeSnapshot(s), ev: this.evBuf });
-        this.evBuf = [];
-      }
+      step(s, inputs, this.B);
+      if (s.tick % T.stateEvery === 0) this.all({ t: 'state', s });
+      else if (s.tick % T.clockEvery === 0) this.all({ t: 'tk', n: s.tick });
       if (s.result) this.endRound(s.result.winner, s.result.surrender);
       return;
     }
@@ -197,7 +215,9 @@ export class Room {
       return;
     const input: Input =
       inp.t === 'boost' ? { t: 'boost', fid: i, x: inp.x, y: inp.y } : { t: 'ability', fid: i };
-    this.queued.push({ tick: this.round.tick + T.inputDelayTicks, seat: i, input });
+    const tick = this.round.tick + T.inputDelayTicks;
+    this.queued.push({ tick, seat: i, input });
+    this.all({ t: 'in', k: tick, i: input });
   }
   onEmote(i: 0 | 1, k: string) {
     const now = this.now();

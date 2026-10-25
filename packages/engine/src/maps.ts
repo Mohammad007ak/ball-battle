@@ -3,6 +3,7 @@ import { hurt } from './combat';
 import type { Ctx } from './ctx';
 import { burst, emit, ring, shake, type Bounds } from './ctx';
 import type { Circle, Fighter, MapId, MapState, Projectile } from './types';
+import { cos, hypot, sin } from './dmath';
 
 export const MAP_IDS: MapId[] = ['classic', 'pillars', 'spikes', 'pinball', 'portal', 'spinner'];
 const PORTAL_COL = ['#d06bff', '#6ee7f9'];
@@ -63,7 +64,7 @@ export function mapTick(c: Ctx, dt: number) {
 function circleBounce(f: Fighter, o: Circle): boolean {
   const dx = f.x - o.x,
     dy = f.y - o.y,
-    d = Math.hypot(dx, dy),
+    d = hypot(dx, dy),
     mn = f.r + o.R;
   if (d >= mn || d === 0) return false;
   const nx = dx / d,
@@ -90,8 +91,8 @@ function barPoint(c: Ctx, x: number, y: number) {
   const bar = c.s.map.bar!,
     cx = c.s.W / 2,
     cy = c.s.H / 2,
-    ux = Math.cos(bar.ang),
-    uy = Math.sin(bar.ang);
+    ux = cos(bar.ang),
+    uy = sin(bar.ang);
   const proj = Math.max(-bar.len, Math.min(bar.len, (x - cx) * ux + (y - cy) * uy));
   return { px: cx + ux * proj, py: cy + uy * proj, ux, uy, proj };
 }
@@ -130,7 +131,7 @@ export function mapPhysics(c: Ctx, f: Fighter, B: Bounds, wall: string | null, d
     const { px, py, ux, uy, proj } = barPoint(c, f.x, f.y),
       dx = f.x - px,
       dy = f.y - py,
-      d = Math.hypot(dx, dy),
+      d = hypot(dx, dy),
       mn = f.r + M.bar.w / 2;
     if (d < mn && d > 0) {
       const nx = dx / d,
@@ -156,7 +157,7 @@ export function mapPhysics(c: Ctx, f: Fighter, B: Bounds, wall: string | null, d
   if (M.portals.length && f.portCd <= 0) {
     for (let i = 0; i < 2; i++) {
       const P = M.portals[i]!;
-      if (Math.hypot(f.x - P.x, f.y - P.y) < D.portal.R) {
+      if (hypot(f.x - P.x, f.y - P.y) < D.portal.R) {
         const Q = M.portals[1 - i]!;
         ring(c, P.x, P.y, 10, PORTAL_COL[i]!, 0.4, 4);
         f.x = Q.x;
@@ -177,14 +178,14 @@ export function arrowMap(c: Ctx, ar: Projectile) {
     D = c.B.engine.maps;
   if (M.obsA > 0.5)
     for (const o of M.pillars.concat(M.bumpers))
-      if (Math.hypot(ar.x - o.x, ar.y - o.y) < o.R + 2) {
+      if (hypot(ar.x - o.x, ar.y - o.y) < o.R + 2) {
         burst(c, ar.x, ar.y, '#c9d6e8', 5, 0.5);
         ar.life = 0;
         return;
       }
   if (M.bar) {
     const { px, py } = barPoint(c, ar.x, ar.y);
-    if (Math.hypot(ar.x - px, ar.y - py) < M.bar.w / 2 + 2) {
+    if (hypot(ar.x - px, ar.y - py) < M.bar.w / 2 + 2) {
       burst(c, ar.x, ar.y, '#6ee7f9', 5, 0.5);
       ar.life = 0;
       return;
@@ -193,7 +194,7 @@ export function arrowMap(c: Ctx, ar: Projectile) {
   if (!ar.ported)
     for (let i = 0; i < M.portals.length; i++) {
       const P = M.portals[i]!;
-      if (Math.hypot(ar.x - P.x, ar.y - P.y) < D.portal.arrowR) {
+      if (hypot(ar.x - P.x, ar.y - P.y) < D.portal.arrowR) {
         const Q = M.portals[1 - i]!;
         ar.x = Q.x + ar.vx * D.portal.arrowLead;
         ar.y = Q.y + ar.vy * D.portal.arrowLead;
@@ -209,8 +210,8 @@ export function clearOfMap(c: Ctx, x: number, y: number): boolean {
   const M = c.s.map,
     D = c.B.engine.maps.clear;
   for (const o of M.pillars.concat(M.bumpers))
-    if (Math.hypot(x - o.x, y - o.y) < o.R + D.obstacle) return false;
-  for (const p of M.portals) if (Math.hypot(x - p.x, y - p.y) < D.portal) return false;
-  if (M.bar && Math.hypot(x - c.s.W / 2, y - c.s.H / 2) < M.bar.len + D.bar) return false;
+    if (hypot(x - o.x, y - o.y) < o.R + D.obstacle) return false;
+  for (const p of M.portals) if (hypot(x - p.x, y - p.y) < D.portal) return false;
+  if (M.bar && hypot(x - c.s.W / 2, y - c.s.H / 2) < M.bar.len + D.bar) return false;
   return true;
 }

@@ -1,6 +1,7 @@
 import type { Ctx } from './ctx';
 import { TAU, banner, burst, cls, emit, foesOf, other, rand, ring, sfx, shake } from './ctx';
 import type { Fighter, Mine, ProjectileKind } from './types';
+import { cos, hypot, sin } from './dmath';
 
 /** Apply damage to `def`. `src` is the attacker, or null for map/poison/bleed damage. */
 export function hurt(
@@ -93,7 +94,7 @@ export function contact(c: Ctx, att: Fighter, def: Fighter) {
   if (att.cls === 'poison') def.poison = Math.min(c.R.poisonMax, def.poison + 1);
   if (att.cls === 'frost') def.slowT = Math.max(def.slowT, c.B.game.CLASSES.frost.p.slow);
   if (att.cls === 'whirlwind')
-    d = (C.dmg + Math.hypot(att.vx, att.vy) / c.B.game.CLASSES.whirlwind.p.per) * att.m;
+    d = (C.dmg + hypot(att.vx, att.vy) / c.B.game.CLASSES.whirlwind.p.per) * att.m;
   if (att.cls === 'ghost' && att.ghostNext) {
     d *= P.ghost.nextMul;
     att.ghostNext = false;
@@ -143,10 +144,10 @@ export interface FireOpts {
 export function fire(c: Ctx, f: Fighter, a: number, o: FireOpts = {}) {
   const sp = o.spd ?? c.R.arrowSpeed;
   c.s.arrows.push({
-    x: f.x + Math.cos(a) * f.r,
-    y: f.y + Math.sin(a) * f.r,
-    vx: Math.cos(a) * sp,
-    vy: Math.sin(a) * sp,
+    x: f.x + cos(a) * f.r,
+    y: f.y + sin(a) * f.r,
+    vx: cos(a) * sp,
+    vy: sin(a) * sp,
     owner: f.id,
     dmg: (o.dmg ?? c.B.game.CLASSES.archer.p.arrow) * f.m,
     life: o.life || c.R.arrowLife,
@@ -189,7 +190,7 @@ export function dropMine(c: Ctx, f: Fighter, x: number, y: number, o: Partial<Mi
 
 function push(c: Ctx, e: Fighter, dx: number, dy: number, k: number, t: number) {
   if (e.stoneT > 0) return;
-  const d = Math.hypot(dx, dy) || 1,
+  const d = hypot(dx, dy) || 1,
     s = cls(c, e).speed;
   e.vx = (dx / d) * s * k;
   e.vy = (dy / d) * s * k;
@@ -211,8 +212,7 @@ export function explode(
   R: number,
   col = '#ffb347',
 ) {
-  for (const e of foesOf(c, owner))
-    if (Math.hypot(e.x - x, e.y - y) < R + e.r) hurt(c, e, dmg, owner);
+  for (const e of foesOf(c, owner)) if (hypot(e.x - x, e.y - y) < R + e.r) hurt(c, e, dmg, owner);
   burst(c, x, y, col, 26, 1.3);
   ring(c, x, y, 8, col, 0.45, 5, R);
   sfx(c, 'boomS');

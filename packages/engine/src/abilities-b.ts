@@ -1,6 +1,7 @@
 import { dropMine, fire, hurt, knock, pull, spines } from './combat';
 import { TAU, burst, emit, rand, ring, shake } from './ctx';
 import type { AbilityEnv } from './abilities';
+import { cos, sin } from './dmath';
 
 /** Abilities of dragon … butterfly (prototype `useAbility`). Returns false if `key` is not handled here. */
 export function abilitiesB(env: AbilityEnv, key: string): boolean {
@@ -9,8 +10,8 @@ export function abilitiesB(env: AbilityEnv, key: string): boolean {
     case 'dragon0':
       for (let i = 1; i <= A.n; i++)
         s.zones.push({
-          x: f.x + Math.cos(a) * i * A.step,
-          y: f.y + Math.sin(a) * i * A.step,
+          x: f.x + cos(a) * i * A.step,
+          y: f.y + sin(a) * i * A.step,
           life: A.life,
           max: A.life,
           owner: f.id,
@@ -23,8 +24,8 @@ export function abilitiesB(env: AbilityEnv, key: string): boolean {
       for (let i = 0; i < A.n; i++) {
         const aa = (i / A.n) * TAU;
         s.zones.push({
-          x: f.x + Math.cos(aa) * A.dist,
-          y: f.y + Math.sin(aa) * A.dist,
+          x: f.x + cos(aa) * A.dist,
+          y: f.y + sin(aa) * A.dist,
           r: A.r,
           life: A.life,
           max: A.life,
@@ -59,8 +60,8 @@ export function abilitiesB(env: AbilityEnv, key: string): boolean {
       break;
     case 'whirlwind2':
       s.zones.push({
-        x: f.x + Math.cos(a) * A.dist,
-        y: f.y + Math.sin(a) * A.dist,
+        x: f.x + cos(a) * A.dist,
+        y: f.y + sin(a) * A.dist,
         r: A.r,
         life: A.life,
         max: A.life,
@@ -124,18 +125,12 @@ export function abilitiesB(env: AbilityEnv, key: string): boolean {
       const off = rand(c) * TAU;
       for (let i = 0; i < A.n; i++) {
         const aa = off + (i / A.n) * TAU;
-        dropMine(
-          c,
-          f,
-          cx(e.x + Math.cos(aa) * A.dist, A.edge),
-          cy(e.y + Math.sin(aa) * A.dist, A.edge),
-          {
-            kind: 'flower',
-            dmg: A.dmg,
-            R: A.R,
-            arm: A.arm,
-          },
-        );
+        dropMine(c, f, cx(e.x + cos(aa) * A.dist, A.edge), cy(e.y + sin(aa) * A.dist, A.edge), {
+          kind: 'flower',
+          dmg: A.dmg,
+          R: A.R,
+          arm: A.arm,
+        });
       }
       ring(c, e.x, e.y, 20, '#f9a8d4', 0.5, 4, 50);
       break;
@@ -195,8 +190,8 @@ export function abilitiesB(env: AbilityEnv, key: string): boolean {
           rr = rand(c) * A.spread,
           t = A.delay + i * A.gap;
         s.drops.push({
-          x: cx(e.x + Math.cos(aa) * rr, A.edge),
-          y: cy(e.y + Math.sin(aa) * rr, A.edge),
+          x: cx(e.x + cos(aa) * rr, A.edge),
+          y: cy(e.y + sin(aa) * rr, A.edge),
           t,
           t0: t,
           owner: f.id,

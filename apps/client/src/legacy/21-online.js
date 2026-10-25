@@ -1,5 +1,6 @@
-// Online 1v1 (server-authoritative). The server runs the engine; this client sends inputs,
-// renders interpolated snapshots and plays the same overlays as offline. "Me" is always team 0
+// Online 1v1 (server-authoritative). The server runs the engine and decides the result; it relays
+// every input with the tick it applies on, so this client runs the same deterministic engine
+// locally and smoothly (see the playback section below) and plays the same overlays as offline. "Me" is always team 0
 // on screen: server sides are remapped with `G.side`.
 let WS = null,
   wsRetry = 0;
@@ -15,7 +16,7 @@ function startOnline() {
   setWorld(CK.B.engine.rules.world1v1);
   const li = leagueOf(S.trophies);
   G = baseG('1v1', li);
-  Object.assign(G, { online: true, side: 0, room: null, snaps: [], teams: [[], []], score: [0, 0], hist: [] });
+  Object.assign(G, { online: true, side: 0, room: null, teams: [[], []], score: [0, 0], hist: [] });
   G.botName = '…';
   openMatchScreen(li);
   // Online opponents may be players or stand-in bots; the player is not told which.
@@ -101,11 +102,20 @@ function onlineMsg(m) {
     case 'round':
       onlineRound(m);
       break;
-    case 'snap':
-      onSnapArrival(m.s.tick);
-      G.snaps.push({ s: m.s, at: performance.now() });
-      if (G.snaps.length > 30) G.snaps.splice(0, G.snaps.length - 30);
-      onEvents(m.ev);
+    case 'in':
+      netInput(m.k, m.i);
+      break;
+    case 'tk':
+      netClock(m.n);
+      break;
+    case 'state':
+      netState(m.s);
+      break;
+    case 'bot':
+      if (NET) {
+        NET.bots.push(m);
+        if (m.k <= NET.P.tick) NET.dirty = true;
+      }
       break;
     case 'finish': {
       const w = loc(m.w);
@@ -145,10 +155,8 @@ function setTeams(teams) {
 }
 
 function onlineRound(m) {
-  // Mirror RoundState built from the server's fighters; snapshots update it in place.
-  const fighters = m.fighters.map((f) => ({ ...f }));
-  G.R = { tick: 0, phase: 'count', count: 3, time: 0, ins: 0, map: CK.E.buildMap(m.map, W, W, CK.B.engine.maps), f: fighters, arrows: [], zones: [], mines: [], drops: [], pups: [] };
-  G.map = viewMap(m.map, W, G.R.map);
+  netStart(m);
+  const fighters = G.R.f;
   G.active = mineFirst(m.active);
   const view = (ef) => {
     const side = ef.team,
@@ -157,8 +165,6 @@ function onlineRound(m) {
   };
   G.byId = fighters.map(view);
   G.f = [...G.byId].sort((a, b) => a.team - b.team);
-  G.snaps = [];
-  NET = { clk: -1, last: 0, lastTick: 0, jit: 2 }; // ticks restart every round
   setupHud();
   renderRosters();
   const [me, foe] = G.f,
@@ -175,76 +181,126 @@ function onlinePick(i) {
 }
 
 /*
- * Playback clock for online matches. Snapshots are placed by their server tick (not by when they
- * happened to arrive), and drawn a little in the past: a jitter buffer that grows when the network
- * is bumpy and shrinks when it is calm. The clock advances smoothly with the frame time and is only
- * nudged toward the target, so late or bunched packets no longer freeze and jump the balls.
+ * Online playback. The phone keeps two copies of the round:
+ *  - C, confirmed: the server's state stepped with the relayed inputs up to the server's tick.
+ *    The engine is deterministic, so C equals the server's state exactly (a full state arrives
+ *    every second anyway and replaces it).
+ *  - P, presented: C advanced to the display tick at 60 Hz. Inputs apply ~100 ms after they are
+ *    sent and are relayed on arrival, so P almost always already knows every input it needs.
+ * When an input or state arrives for a tick P has already simulated, P is rebuilt from C and the
+ * on-screen jump is smoothed away over a few frames.
  */
-let NET = { clk: -1, last: 0, lastTick: 0, jit: 2 };
-function onSnapArrival(tick) {
+let NET = null;
+const cloneState = (s) => (typeof structuredClone === 'function' ? structuredClone(s) : JSON.parse(JSON.stringify(s)));
+function netStart(m) {
   const now = performance.now();
-  if (NET.last && tick > NET.lastTick) {
-    // Arrival spacing vs. the spacing the server sent them with, in ticks.
-    const dev = Math.abs((now - NET.last) / (1000 / 60) - (tick - NET.lastTick));
-    NET.jit += (dev - NET.jit) * 0.1;
-  }
-  NET.last = now;
-  NET.lastTick = Math.max(NET.lastTick, tick);
+  NET = { C: m.s, P: cloneState(m.s), inputs: new Map(), bots: [], n: m.s.tick, at: now, D: m.s.tick, shown: m.s.tick, dirty: false, off: {}, prev: new Map() };
+  for (const [k, i] of m.q || []) netInput(k, i);
+  G.R = NET.P;
+  G.map = viewMap(m.map, W, NET.P.map);
 }
-function netDelay() {
-  return Math.max(5, Math.min(24, 4 + NET.jit * 2.5)); // ticks behind the newest snapshot
+function netInput(k, i) {
+  if (!NET) return;
+  const a = NET.inputs.get(k) || [];
+  a.push(i);
+  NET.inputs.set(k, a);
+  if (k <= NET.P.tick) NET.dirty = true;
 }
-function onlineFrame(dt) {
-  if (!G.R || !G.snaps.length) return;
-  const newest = G.snaps[G.snaps.length - 1].s.tick,
-    target = newest - netDelay();
-  if (NET.clk < 0 || Math.abs(target - NET.clk) > 45) NET.clk = target;
-  else NET.clk += dt * 60 + (target - NET.clk) * 0.04;
-  const t = NET.clk;
-  let i = G.snaps.length - 1;
-  while (i > 0 && G.snaps[i].s.tick > t) i--;
-  const a = G.snaps[i],
-    b = G.snaps[i + 1];
-  CK.P.applySnapshot(G.R, a.s);
-  if (b) {
-    const k = Math.max(0, Math.min(1, (t - a.s.tick) / (b.s.tick - a.s.tick || 1)));
-    b.s.f.forEach((row, id) => {
-      const f = G.R.f[id];
-      if (f && Math.abs(row[0] - f.x) + Math.abs(row[1] - f.y) < 60) {
-        f.x += (row[0] - f.x) * k;
-        f.y += (row[1] - f.y) * k;
-      }
-    });
-    // Projectiles: same index and owner in both snapshots → glide between them.
-    const A = G.R.arrows;
-    b.s.a.forEach((row, j) => {
-      const p = A[j];
-      if (p && p.owner === row[5] && Math.abs(row[0] - p.x) + Math.abs(row[1] - p.y) < 60) {
-        p.x += (row[0] - p.x) * k;
-        p.y += (row[1] - p.y) * k;
-      }
-    });
-  } else {
-    // Ran past the newest snapshot (late packet): keep moving along the last velocity briefly.
-    const ahead = Math.min(6, t - a.s.tick) / 60;
-    for (const f of G.R.f) {
-      f.x += f.vx * ahead;
-      f.y += f.vy * ahead;
+/** Step a state to `to`, applying relayed inputs and bot takeovers exactly where the server did. */
+function netStep(st, to, emit) {
+  while (st.tick < to && !st.result) {
+    for (const b of NET.bots) if (b.k === st.tick) st.f[b.seat].bot = true;
+    const ev = CK.E.step(st, NET.inputs.get(st.tick) || [], CK.B);
+    if (emit && st.tick > NET.shown) {
+      NET.shown = st.tick;
+      onEvents(ev);
     }
   }
-  if (G.phase === 'vs' && G.R.phase === 'count') {
+}
+function netClock(n) {
+  if (!NET || n <= NET.n) return;
+  NET.n = n;
+  NET.at = performance.now();
+  netStep(NET.C, n, false);
+  for (const k of NET.inputs.keys()) if (k < NET.C.tick - 120) NET.inputs.delete(k);
+}
+function netState(s) {
+  if (!NET) return;
+  netStep(NET.C, s.tick, false);
+  if (s.tick > NET.n) {
+    NET.n = s.tick;
+    NET.at = performance.now();
+  }
+  // Same tick, same state expected (deterministic engine). Only a real divergence costs a rebuild.
+  if (NET.C.tick !== s.tick || CK.E.hashState(NET.C) !== CK.E.hashState(s)) {
+    NET.ds = (NET.ds || 0) + 1;
+    if (PROF) window.__desync = [JSON.stringify(NET.C), JSON.stringify(s)];
+    NET.C = s;
+    NET.dirty = true;
+  }
+}
+function onlineFrame(dt) {
+  if (!NET || !G.R) return;
+  const N = NET,
+    now = performance.now();
+  // Display tick: the server's tick as of now, a step behind; never past the inputs we know.
+  const target = Math.min(N.n + ((now - N.at) / 1000) * 60 - 1, N.n + T_LEAD);
+  if (Math.abs(target - N.D) > 30) N.D = target;
+  else N.D = Math.max(N.D, Math.min(N.D + dt * 60 + (target - N.D) * 0.06, N.n + T_LEAD));
+  const Tk = Math.max(N.C.tick, Math.floor(N.D));
+  if (N.dirty || N.P.tick > Tk) {
+    // Rebuild from the confirmed state; remember where things were drawn to hide the jump.
+    for (const v of G.byId) N.off[v.id] = { x: v.x, y: v.y, pending: true };
+    N.P = cloneState(N.C);
+    N.rb = (N.rb || 0) + 1;
+    N.prev = new Map();
+    N.dirty = false;
+  }
+  if (N.P.tick < Tk) {
+    if (N.P.tick === Tk - 1) for (const f of N.P.f) N.prev.set(f.id, { x: f.x, y: f.y });
+    else N.prev = new Map();
+    netStep(N.P, Tk, true);
+  }
+  G.R = N.P;
+  if (G.map !== N.P.map) G.map = viewMap(N.P.map.id, W, N.P.map);
+  if (G.phase === 'vs' && N.n > 0) {
     $('#ov').hidden = true;
     G.phase = 'count';
   }
-  syncViewOnline();
+  syncViewOnline(Math.min(1, N.D - Tk), dt);
 }
+/** Ticks the display may run ahead of the server's last known tick (inputs are relayed ~6 early). */
+const T_LEAD = 4;
 
-function syncViewOnline() {
-  const R = G.R;
+function syncViewOnline(al, dt) {
+  const R = G.R,
+    N = NET;
   for (const ef of R.f) {
     const v = fv(ef.id),
       team = v.team;
     Object.assign(v, ef, { team });
+    // Glide between the last two simulated ticks.
+    const p = N.prev.get(ef.id);
+    if (p && Math.abs(ef.x - p.x) + Math.abs(ef.y - p.y) < 40) {
+      v.x = p.x + (ef.x - p.x) * al;
+      v.y = p.y + (ef.y - p.y) * al;
+    }
+    // After a correction, start from where the ball was drawn and fade the difference out.
+    const o = N.off[ef.id];
+    if (o) {
+      if (o.pending) {
+        o.dx = o.x - v.x;
+        o.dy = o.y - v.y;
+        o.pending = false;
+        if (Math.abs(o.dx) + Math.abs(o.dy) > 60) o.dx = o.dy = 0; // teleports just jump
+      }
+      const k = Math.exp(-dt * 14);
+      o.dx *= k;
+      o.dy *= k;
+      v.x += o.dx;
+      v.y += o.dy;
+      if (Math.abs(o.dx) + Math.abs(o.dy) < 0.05) delete N.off[ef.id];
+    }
     if (ef.aura) v.aura = { ...ef.aura, col: AURA_COL[ef.aura.kind] };
   }
   G.arrows = R.arrows.map((a, i) => ({ ...a, owner: fv(a.owner), spin: G.clock * 9 + i }));

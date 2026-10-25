@@ -4,6 +4,7 @@ import type { Ctx } from './ctx';
 import { bounds, cls, fighter, rand } from './ctx';
 import { nudge } from './fighter';
 import type { Fighter } from './types';
+import { hypot } from './dmath';
 
 /** Bot skill 0..1 for a player's trophy count (piecewise linear over `rules.bot.skillCurve`). */
 export function botSkillFor(B: Balance, trophies: number): number {
@@ -24,7 +25,7 @@ function abilityTiming(c: Ctx, B: Fighter, A: Fighter, sk: number): boolean {
   const S = c.R.bot.smart,
     key = B.cls + B.ab,
     AP = (c.B.engine.abilities as Record<string, { range?: number }>)[key],
-    dist = Math.hypot(A.x - B.x, A.y - B.y);
+    dist = hypot(A.x - B.x, A.y - B.y);
   // Hold for at most `rangeHold` seconds; a skill-0 bot never holds.
   if (B.botHold > S.rangeHold * sk) return true;
   if (AP?.range !== undefined) return dist < AP.range + A.r;
@@ -47,7 +48,7 @@ function incoming(c: Ctx, B: Fighter, look: number) {
       v2 = ar.vx * ar.vx + ar.vy * ar.vy || 1,
       t = (rx * ar.vx + ry * ar.vy) / v2;
     if (t < 0 || t > look) continue;
-    if (Math.hypot(ar.x + ar.vx * t - B.x, ar.y + ar.vy * t - B.y) < D + B.r) return ar;
+    if (hypot(ar.x + ar.vx * t - B.x, ar.y + ar.vy * t - B.y) < D + B.r) return ar;
   }
   return null;
 }
@@ -80,7 +81,7 @@ export function botThink(c: Ctx, B: Fighter, A: Fighter, dt: number) {
     const ar = incoming(c, B, S.dodgeLook * 0.6);
     if (ar && rand(c) < sk * dt * 8) {
       const side = ar.vx * (B.y - ar.y) - ar.vy * (B.x - ar.x) >= 0 ? 1 : -1,
-        v = Math.hypot(ar.vx, ar.vy) || 1;
+        v = hypot(ar.vx, ar.vy) || 1;
       nudge(c, B, B.x - (ar.vy / v) * 100 * side, B.y + (ar.vx / v) * 100 * side);
       B.botT = Math.max(B.botT, K.boostMin);
       return;
@@ -90,7 +91,7 @@ export function botThink(c: Ctx, B: Fighter, A: Fighter, dt: number) {
   const C = cls(c, B),
     p = c.s.pups[0],
     low = B.hp / B.maxHp < S.lowHp,
-    dist = Math.hypot(A.x - B.x, A.y - B.y);
+    dist = hypot(A.x - B.x, A.y - B.y);
   // A skilled bot saves charges until a boost can land a hit (melee) or is needed to escape (ranged).
   if (sk > 0 && !p) {
     const range = C.melee ? S.meleeBoostRange : S.rangedBoostRange;
@@ -107,7 +108,7 @@ export function botThink(c: Ctx, B: Fighter, A: Fighter, dt: number) {
   } else {
     const dx = B.x - A.x,
       dy = B.y - A.y,
-      d = Math.hypot(dx, dy) || 1,
+      d = hypot(dx, dy) || 1,
       b = bounds(c),
       jit = lerp(K.kiteJitter, S.kiteJitterMin, sk);
     tx = Math.min(

@@ -264,3 +264,37 @@ describe('match', () => {
     expect(m.round).toBeLessThanOrEqual(3);
   });
 });
+
+describe('online sync', () => {
+  // Online clients get the round state as JSON and keep simulating it themselves.
+  it('a state sent as JSON continues exactly like the original, for every class and map', () => {
+    for (const map of MAP_IDS)
+      for (let i = 0; i < CLASS_KEYS.length; i += 2) {
+        const cls = [CLASS_KEYS[i]!, CLASS_KEYS[(i + 7) % CLASS_KEYS.length]!];
+        const s = createRound({
+          seed: 11 + i,
+          mode: '1v1',
+          map,
+          balance: B,
+          fx: true,
+          fighters: cls.map((c, t) => ({
+            team: t as 0 | 1,
+            cls: c,
+            lvl: 4,
+            ab: (i % 3) as 0,
+            bot: true,
+          })),
+        });
+        for (let k = 0; k < 1500 && !s.result; k++) {
+          step(s, [], B);
+          if (k % 250 !== 120) continue;
+          const copy = JSON.parse(JSON.stringify(s)) as typeof s;
+          for (let j = 0; j < 240 && !s.result; j++) {
+            step(s, [], B);
+            step(copy, [], B);
+          }
+          expect(hashState(copy), `${map} ${cls.join()} @${k}`).toBe(hashState(s));
+        }
+      }
+  });
+});

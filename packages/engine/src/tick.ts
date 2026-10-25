@@ -17,6 +17,7 @@ import {
 } from './ctx';
 import { mapPhysics } from './maps';
 import type { Fighter } from './types';
+import { atan2, cos, hypot, sin } from './dmath';
 
 const PUP_COL: Record<PickupType, string> = {
   heal: '#4ade80',
@@ -75,14 +76,14 @@ export function fighterTick(c: Ctx, f: Fighter, dt: number) {
     C.speed * buffMul * (1 + boost) *
     (f.slowT > 0 ? R.slowMul : 1) * (f.freezeT > 0 ? R.freezeMul : 1) *
     (f.rootT > 0 || f.cocoonT > 0 ? R.rootMul : 1) * (f.dazeT > 0 ? R.dazeMul : 1); // prettier-ignore
-  let ang = Math.atan2(f.vy, f.vx) + (bt > 0 ? 0 : (rand(c) - 0.5) * R.wander);
+  let ang = atan2(f.vy, f.vx) + (bt > 0 ? 0 : (rand(c) - 0.5) * R.wander);
   if (f.charmT > 0 && f.charmBy >= 0 && bt <= 0) {
     const by = fighter(c, f.charmBy),
-      df = wrapAngle(Math.atan2(by.y - f.y, by.x - f.x) - ang);
+      df = wrapAngle(atan2(by.y - f.y, by.x - f.x) - ang);
     ang += clamp(df, -R.charmTurn * dt, R.charmTurn * dt);
   }
-  f.vx = Math.cos(ang) * want;
-  f.vy = Math.sin(ang) * want;
+  f.vx = cos(ang) * want;
+  f.vy = sin(ang) * want;
   f.x += f.vx * dt;
   f.y += f.vy * dt;
   let wall: string | null = null;
@@ -97,7 +98,7 @@ export function fighterTick(c: Ctx, f: Fighter, dt: number) {
   const CP = C.p as Record<string, number>;
   const aim = () => {
     const e = other(c, f);
-    return Math.atan2(e.y - f.y, e.x - f.x);
+    return atan2(e.y - f.y, e.x - f.x);
   };
   if (f.cls === 'archer') {
     f.arrowT -= dt;
@@ -224,7 +225,7 @@ export function fighterTick(c: Ctx, f: Fighter, dt: number) {
     const au = f.aura;
     au.t -= dt;
     for (const e of foesOf(c, f))
-      if (Math.hypot(e.x - f.x, e.y - f.y) < au.r + e.r) {
+      if (hypot(e.x - f.x, e.y - f.y) < au.r + e.r) {
         e.auraAcc += au.dps * f.m * dt;
         if (au.slow) e.slowT = Math.max(e.slowT, R.auraSlowT);
         if (e.auraAcc >= R.tickAcc) {
@@ -236,7 +237,7 @@ export function fighterTick(c: Ctx, f: Fighter, dt: number) {
   }
   const K = R.pickups;
   for (const p of s.pups) {
-    if (Math.hypot(p.x - f.x, p.y - f.y) < f.r + K.radius && !p.taken) {
+    if (hypot(p.x - f.x, p.y - f.y) < f.r + K.radius && !p.taken) {
       p.taken = true;
       if (p.type === 'heal') f.hp = Math.min(f.maxHp, f.hp + f.maxHp * K.heal);
       if (p.type === 'power') f.powT = K.powerT;

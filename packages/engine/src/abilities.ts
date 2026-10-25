@@ -4,6 +4,7 @@ import { fire, hurt, knock } from './combat';
 import type { Ctx } from './ctx';
 import { bounds, clamp, cls, emit, other, ring, sfx, shake } from './ctx';
 import type { Fighter } from './types';
+import { atan2, cos, hypot, sin } from './dmath';
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- per-ability params are heterogeneous JSON */
 export type P = Record<string, any>;
@@ -41,8 +42,8 @@ export function useAbility(c: Ctx, f: Fighter): boolean {
     A = (c.B.engine.abilities as Record<string, P>)[key]!,
     R = c.R;
   f.abilityCd = f.abilityMax;
-  const a = Math.atan2(e.y - f.y, e.x - f.x),
-    dist = Math.hypot(e.x - f.x, e.y - f.y),
+  const a = atan2(e.y - f.y, e.x - f.x),
+    dist = hypot(e.x - f.x, e.y - f.y),
     B = bounds(c);
   const fan = (n: number, spread: number, o: P, center = (n - 1) / 2, base = a) => {
     for (let i = 0; i < n; i++) fire(c, f, base + (i - center) * spread, o);
@@ -51,8 +52,8 @@ export function useAbility(c: Ctx, f: Fighter): boolean {
   const cx = (x: number, edge: number) => clamp(x, B.x0 + edge, B.x1 - edge);
   const cy = (y: number, edge: number) => clamp(y, B.y0 + edge, B.y1 - edge);
   const dash = (boost: number) => {
-    f.vx = Math.cos(a) * C.speed;
-    f.vy = Math.sin(a) * C.speed;
+    f.vx = cos(a) * C.speed;
+    f.vy = sin(a) * C.speed;
     f.boostT = c.B.game.BOOST_TIME * boost;
   };
   const shove = (A: P, col: string, grow: number, w = 6, max = 0.45) => {

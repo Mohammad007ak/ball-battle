@@ -21,7 +21,7 @@ function profMeter(ts) {
     el.style.cssText = 'position:fixed;top:0;left:0;z-index:999;margin:0;padding:4px 6px;font:11px/1.3 monospace;color:#0f0;background:rgba(0,0,0,.7);direction:ltr;pointer-events:none';
     document.body.appendChild(el);
   }
-  el.textContent = `fps ${a.length}  worst ${worst.toFixed(0)}ms  long ${long}\nupd ${avg(0)}  draw ${avg(1)}  hud ${avg(2)}\n${CK.Q.level()} ${cv.width}x${cv.height} dpr ${devicePixelRatio}`;
+  el.textContent = `fps ${a.length}  worst ${worst.toFixed(0)}ms  long ${long}\nupd ${avg(0)}  draw ${avg(1)}  hud ${avg(2)}\n${CK.Q.level()} ${cv.width}x${cv.height} dpr ${devicePixelRatio}${G && G.online && NET ? `\nnet tick ${NET.n} lead ${(NET.n - NET.D).toFixed(1)} fix ${NET.rb || 0} desync ${NET.ds || 0}` : ''}`;
 }
 /** Dev only (offline backend): `?speed=8` fast-forwards matches for testing. */
 const DEV_SPEED = CK.BK.dev ? Number(new URLSearchParams(location.search).get('speed')) || 1 : 1;

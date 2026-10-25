@@ -1,6 +1,7 @@
 import { dropMine, explode, fire, hurt } from './combat';
 import { TAU, burst, clamp, emit, ring } from './ctx';
 import type { AbilityEnv } from './abilities';
+import { cos, hypot, sin } from './dmath';
 
 /** Abilities of archer … ghost (prototype `useAbility`). Returns false if `key` is not handled here. */
 export function abilitiesA(env: AbilityEnv, key: string): boolean {
@@ -111,8 +112,8 @@ export function abilitiesA(env: AbilityEnv, key: string): boolean {
         dropMine(
           c,
           f,
-          cx(f.x + Math.cos(aa) * A.mineDist, A.edge),
-          cy(f.y + Math.sin(aa) * A.mineDist, A.edge),
+          cx(f.x + cos(aa) * A.mineDist, A.edge),
+          cy(f.y + sin(aa) * A.mineDist, A.edge),
         );
       }
       break;
@@ -122,8 +123,8 @@ export function abilitiesA(env: AbilityEnv, key: string): boolean {
         dropMine(
           c,
           f,
-          cx(f.x + Math.cos(aa) * A.mineDist, A.edge),
-          cy(f.y + Math.sin(aa) * A.mineDist, A.edge),
+          cx(f.x + cos(aa) * A.mineDist, A.edge),
+          cy(f.y + sin(aa) * A.mineDist, A.edge),
         );
       }
       break;
@@ -173,7 +174,7 @@ export function abilitiesA(env: AbilityEnv, key: string): boolean {
       f.ghostNext = true;
       break;
     case 'ghost1': {
-      const ev = Math.hypot(e.vx, e.vy) || 1,
+      const ev = hypot(e.vx, e.vy) || 1,
         ux = e.vx / ev,
         uy = e.vy / ev;
       ring(c, f.x, f.y, f.r, '#e9e7ff', 0.4, 4);
