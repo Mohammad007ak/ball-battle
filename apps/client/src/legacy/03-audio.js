@@ -134,7 +134,7 @@ const TRACKS={
       else if(st%2===0)tone(mtof(deg(r+[0,2,4,2][(st/2)%4],74)),sd*0.9,{type:'triangle',vol:0.04,at:t,out:AU.mus})}}
 };
 /* recorded tracks (apps/client/public/music); a track without files, or not yet decoded, falls back to its procedural loop */
-const MUSIC_FILES={battle:['music/battle-1.ogg','music/battle-2.ogg','music/battle-3.ogg']};const MUSIC_VOL=0.75;
+const MUSIC_FILES={menu:['music/menu.ogg'],battle:['music/battle-1.ogg','music/battle-2.ogg','music/battle-3.ogg']};const MUSIC_VOL=0.75;
 AU.buf={};AU.src=null;AU.pick={};
 function musicLoad(url){if(AU.buf[url])return AU.buf[url];
   AU.buf[url]=fetch(url).then(r=>r.arrayBuffer()).then(b=>new Promise((ok,no)=>AU.ctx.decodeAudioData(b,ok,no))).catch(()=>{AU.buf[url]=null;return null});return AU.buf[url]}
@@ -142,7 +142,7 @@ function musicStopFile(){if(AU.src){const s=AU.src,g=s.g,t=AU.ctx.currentTime;AU
 function musicPlayFile(name){const list=MUSIC_FILES[name];if(!list)return;const i=AU.pick[name]=((AU.pick[name]??Math.floor(Math.random()*list.length)-1)+1)%list.length;
   musicLoad(list[i]).then(b=>{if(!b||AU.track!==name||AU.src)return;const c=AU.ctx,s=c.createBufferSource(),g=c.createGain();s.buffer=b;s.loop=true;s.g=g;
     g.gain.setValueAtTime(0,c.currentTime);g.gain.linearRampToValueAtTime(MUSIC_VOL,c.currentTime+0.8);s.connect(g);g.connect(AU.mus);s.start();AU.src=s})}
-function auSched(){if(!AU.ctx||!AU.track||AU.src)return;const T=TRACKS[AU.track],sd=60/T.bpm/4;const now=AU.ctx.currentTime;if(AU.next<now)AU.next=now+0.05;
+function auSched(){if(!AU.ctx||!AU.track||AU.src||(MUSIC_FILES[AU.track]||[]).some(u=>AU.buf[u]!==null))return;const T=TRACKS[AU.track],sd=60/T.bpm/4;const now=AU.ctx.currentTime;if(AU.next<now)AU.next=now+0.05;
   while(AU.next<now+0.14){try{T.step(AU.step%T.len,AU.next,sd)}catch(e){}AU.next+=sd;AU.step++}}
 function musicFor(){if(!AU.ctx)return;const want=($('#match')&&!$('#match').hidden)?'battle':'menu';if(AU.track===want)return;AU.track=want;AU.step=0;AU.next=AU.ctx.currentTime+0.1;musicStopFile();musicPlayFile(want);
   const g=AU.mus.gain,t=AU.ctx.currentTime;g.cancelScheduledValues(t);g.setValueAtTime(0.0001,t);g.linearRampToValueAtTime(AU.musOn?0.3:0,t+0.6)}
