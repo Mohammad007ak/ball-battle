@@ -1,0 +1,96 @@
+# Android builds for Cafe Bazaar on GitHub's servers (docs/RELEASE.md).
+# - With the signing Secrets (ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, optional
+#   ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD): a signed release APK + AAB, published in Releases.
+# - Without them: a debug APK only, for trying on a phone.
+# versionCode = run number + 3 (3 was the last hand-built upload), so every run can go to Bazaar.
+# The server URL comes from the repository variable VITE_API_URL (default: the production server).
+name: Android
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "apps/client/**"
+      - "packages/**"
+      - ".github/workflows/android.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  bazaar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      VITE_API_URL: ${{ vars.VITE_API_URL || 'https://chakachak.darkube.ir' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm android:sync
+
+      - name: Keystore from secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/chakachak.jks"
+            echo "KEYSTORE_FILE=$RUNNER_TEMP/chakachak.jks" >> "$GITHUB_ENV"
+          fi
+          echo "VERSION_CODE=$((GITHUB_RUN_NUMBER + 3))" >> "$GITHUB_ENV"
+          echo "VERSION_NAME=$(node -p "require('./apps/client/package.json').version")" >> "$GITHUB_ENV"
+
+      - name: Build
+        working-directory: apps/client/android
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          if [ -n "$KEYSTORE_FILE" ]; then
+            ./gradlew --no-daemon assembleBazaarRelease bundleBazaarRelease -PversionCode=$VERSION_CODE
+            cp app/build/outputs/apk/bazaar/release/app-bazaar-release.apk "$GITHUB_WORKSPACE/out/chakachak-bazaar.apk"
+            cp app/build/outputs/bundle/bazaarRelease/app-bazaar-release.aab "$GITHUB_WORKSPACE/out/chakachak-bazaar.aab"
+            echo "KIND=release" >> "$GITHUB_ENV"
+          else
+            ./gradlew --no-daemon assembleBazaarDebug -PversionCode=$VERSION_CODE
+            cp app/build/outputs/apk/bazaar/debug/app-bazaar-debug.apk "$GITHUB_WORKSPACE/out/chakachak-bazaar-debug.apk"
+            echo "KIND=debug" >> "$GITHUB_ENV"
+          fi
+
+      - name: Summary
+        run: |
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          SHA=$("$APKSIGNER" verify --print-certs out/*.apk | grep -m1 "SHA-256" | awk '{print $NF}')
+          {
+            echo "### چکاچک $VERSION_NAME ($KIND) — versionCode $VERSION_CODE"
+            echo ""
+            echo "امضا (SHA-256): \`$SHA\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chakachak-${{ env.KIND }}-${{ env.VERSION_CODE }}
+          path: out/
+          retention-days: 30
+
+      - name: Publish release
+        if: env.KIND == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-${{ env.VERSION_NAME }}-${{ env.VERSION_CODE }}
+          name: چکاچک ${{ env.VERSION_NAME }} (${{ env.VERSION_CODE }})
+          target_commitish: ${{ github.sha }}
+          make_latest: true
+          files: out/*

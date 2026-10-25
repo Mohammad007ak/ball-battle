@@ -31,7 +31,16 @@ Outputs (one per store, each with its own billing library):
 - `apps/client/android/app/build/outputs/bundle/{bazaar,myket}Release/*.aab`
 - `apps/client/android/app/build/outputs/apk/{bazaar,myket}/release/*.apk`
 
-Before every upload bump `versionCode` in `apps/client/android/app/build.gradle` and `version` in
+## Build on GitHub (preferred)
+`.github/workflows/android.yml` builds the Bazaar APK + AAB on every push to `main` touching the app
+(or by hand: Actions → Android → Run workflow, on any branch) and publishes them in Releases.
+- Secrets (Settings → Secrets and variables → Actions): `ANDROID_KEYSTORE_BASE64` (`base64 -w0
+  chakachak-release.jks`), `ANDROID_KEYSTORE_PASSWORD` (key password is the same; alias `chakachak`).
+  Without them the run makes a debug APK only.
+- Variable `VITE_API_URL` overrides the server (default `https://chakachak.darkube.ir`).
+- `versionCode` = run number + 3, so every run is a valid Bazaar upload.
+
+Before every local upload bump `versionCode` in `apps/client/android/app/build.gradle` and `version` in
 `apps/client/package.json` (it becomes `versionName` and is sent with error reports).
 
 ## App identity

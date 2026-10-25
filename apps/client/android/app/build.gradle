@@ -7,8 +7,9 @@ android {
         applicationId "ir.chakachak.game"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        // versionName follows apps/client/package.json; bump versionCode for every store upload.
-        versionCode 3
+        // versionName follows apps/client/package.json. versionCode must grow with every store
+        // upload: CI passes -PversionCode (run number + 3); local builds use the last manual one.
+        versionCode Integer.parseInt((findProperty('versionCode') ?: '3').toString())
         versionName new groovy.json.JsonSlurper().parse(file('../../package.json')).version
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
@@ -17,13 +18,21 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
-    // Release signing from keystore.properties (never committed; see docs/RELEASE.md).
+    // Release signing from keystore.properties (local, never committed) or, in CI, from the
+    // KEYSTORE_FILE / KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD environment (docs/RELEASE.md).
     def ksFile = rootProject.file('keystore.properties')
+    def ks = new Properties()
+    if (ksFile.exists()) ksFile.withInputStream { ks.load(it) }
+    else if (System.getenv('KEYSTORE_FILE')) ks.putAll([
+        storeFile: System.getenv('KEYSTORE_FILE'),
+        storePassword: System.getenv('KEYSTORE_PASSWORD'),
+        keyAlias: System.getenv('KEY_ALIAS') ?: 'chakachak',
+        keyPassword: System.getenv('KEY_PASSWORD') ?: System.getenv('KEYSTORE_PASSWORD'),
+    ])
+    def canSign = ks['storeFile'] != null
     signingConfigs {
-        if (ksFile.exists()) {
+        if (canSign) {
             release {
-                def ks = new Properties()
-                ksFile.withInputStream { ks.load(it) }
                 storeFile file(ks['storeFile'])
                 storePassword ks['storePassword']
                 keyAlias ks['keyAlias']
@@ -46,7 +55,7 @@ android {
     buildFeatures { buildConfig = true }
     buildTypes {
         release {
-            if (ksFile.exists()) signingConfig signingConfigs.release
+            if (canSign) signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
