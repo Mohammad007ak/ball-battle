@@ -18,6 +18,7 @@ import {
   verifyOtp,
 } from './auth';
 import { RemoteConfig } from './config';
+import { privacyRoutes } from './privacy';
 import type { DB } from './db';
 import { act, loadProfile, me } from './game';
 import { RateLimiter } from './ratelimit';
@@ -87,6 +88,7 @@ export function buildApp(o: AppOptions) {
     if (req.method === 'OPTIONS') return reply.code(204).send();
   });
   app.get('/health', async () => ({ ok: true }));
+  privacyRoutes(app);
   // Phone linking is offered only when codes can actually be delivered (a real SMS provider).
   const phoneLogin = c.sms.real || !!c.testOtp;
   app.get('/v1/config', async () => ({
