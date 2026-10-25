@@ -15,7 +15,7 @@ export interface Quality {
 }
 
 const KEY = 'chakachak-quality',
-  SLOW_MS = 22,
+  SLOW_MS = 18,
   WINDOW = 90;
 
 export function makeQuality(onChange?: (level: 'high' | 'low') => void): Quality {

@@ -2,6 +2,27 @@
 // with packages/engine: the engine owns every gameplay number and outcome; this file keeps the
 // prototype's match flow and turns engine state + events into the view objects `draw()` expects.
 const SIM_DT = CK.E.DT;
+/** Dev: `?prof=1` records per-frame [update, draw, hud, timestamp] ms in window.__prof. */
+const PROF = /[?&]prof=1/.test(location.search) || import.meta.env.VITE_PERF === '1' ? (window.__prof = []) : null;
+/** On-screen meter for PROF builds: fps, worst frame and the average cost of each part. */
+let profT = 0;
+function profMeter(ts) {
+  if (ts - profT < 1000) return;
+  profT = ts;
+  const a = PROF.filter((x) => ts - x[3] < 1000);
+  if (a.length < 2) return;
+  const avg = (k) => (a.reduce((s, x) => s + x[k], 0) / a.length).toFixed(1);
+  let worst = 0, long = 0;
+  for (let i = 1; i < a.length; i++) { const g = a[i][3] - a[i - 1][3]; worst = Math.max(worst, g); if (g > 25) long++; } // prettier-ignore
+  let el = $('#perfMeter');
+  if (!el) {
+    el = document.createElement('pre');
+    el.id = 'perfMeter';
+    el.style.cssText = 'position:fixed;top:0;left:0;z-index:999;margin:0;padding:4px 6px;font:11px/1.3 monospace;color:#0f0;background:rgba(0,0,0,.7);direction:ltr;pointer-events:none';
+    document.body.appendChild(el);
+  }
+  el.textContent = `fps ${a.length}  worst ${worst.toFixed(0)}ms  long ${long}\nupd ${avg(0)}  draw ${avg(1)}  hud ${avg(2)}\n${CK.Q.level()} ${cv.width}x${cv.height} dpr ${devicePixelRatio}`;
+}
 /** Dev only (offline backend): `?speed=8` fast-forwards matches for testing. */
 const DEV_SPEED = CK.BK.dev ? Number(new URLSearchParams(location.search).get('speed')) || 1 : 1;
 const AURA_COL = { snow: '191,243,255', elec: '129,140,248', sun: '255,207,112', petal: '253,164,175' };
@@ -274,11 +295,30 @@ function useAbility(f) {
   else G.inputs.push({ t: 'ability', fid: f.id });
 }
 
+/**
+ * Render interpolation: the engine steps at a fixed 60 Hz but screens run at 60/90/120 Hz, so
+ * drawing the last step's positions makes balls judder. Draw them between the previous and the
+ * current step instead (≤ one step of visual delay). Presentation only; the engine is untouched.
+ */
+const PREV = new WeakMap();
+function snapPrev() {
+  for (const ef of G.R.f) PREV.set(ef, { x: ef.x, y: ef.y });
+  for (const a of G.R.arrows) PREV.set(a, { x: a.x, y: a.y });
+}
+function lerpPos(o, v, al) {
+  const p = PREV.get(o);
+  // Teleports and respawns jump; everything else glides.
+  if (!p || Math.abs(o.x - p.x) + Math.abs(o.y - p.y) > 40) return;
+  v.x = p.x + (o.x - p.x) * al;
+  v.y = p.y + (o.y - p.y) * al;
+}
 function syncView() {
-  const R = G.R;
+  const R = G.R,
+    al = Math.min(1, G.acc / SIM_DT);
   for (const ef of R.f) {
     const v = fv(ef.id);
     Object.assign(v, ef);
+    lerpPos(ef, v, al);
     if (ef.aura) v.aura = { ...ef.aura, col: AURA_COL[ef.aura.kind] };
   }
   const look = (o, init) => {
@@ -286,7 +326,11 @@ function syncView() {
     if (!l) LOOK.set(o, (l = init()));
     return l;
   };
-  G.arrows = R.arrows.map((a) => ({ ...a, owner: fv(a.owner), spin: look(a, () => ({ spin: Math.random() * TAU })).spin }));
+  G.arrows = R.arrows.map((a) => {
+    const v = { ...a, owner: fv(a.owner), spin: look(a, () => ({ spin: Math.random() * TAU })).spin };
+    lerpPos(a, v, al);
+    return v;
+  });
   G.zones = R.zones.map((z) => ({ ...z, owner: fv(z.owner), hue: look(z, () => ({ hue: (G.clock * 360) % 360 })).hue }));
   G.mines = R.mines.map((m) => ({ ...m, owner: fv(m.owner) }));
   G.drops = R.drops;
@@ -398,6 +442,7 @@ function update(dt) {
   // Fixed-step engine; hitstop/slow-motion only change how fast steps are consumed (presentation).
   G.acc += dt * DEV_SPEED;
   while (G.acc >= SIM_DT && !G.R.result) {
+    snapPrev();
     const inp = G.inputs.splice(0);
     // Record inputs with the tick they apply on; the backend replays them to verify the result.
     if (inp.length) G.log.rounds[G.log.rounds.length - 1].inputs.push([G.R.tick, inp]);
@@ -459,6 +504,32 @@ function endRound(res) {
   }, 1500);
 }
 
+/** Cached HUD writes: the DOM is touched only when the value differs from the last one written. */
+const HUD_EL = {},
+  HUD_V = {};
+const hel = (q) => HUD_EL[q] || (HUD_EL[q] = $(q));
+function hset(q, prop, v) {
+  const k = q + '|' + prop;
+  if (HUD_V[k] === v) return;
+  HUD_V[k] = v;
+  const el = hel(q);
+  if (!el) return;
+  if (prop.startsWith('--')) el.style.setProperty(prop, v);
+  else el.style[prop] = v;
+}
+function htext(q, v) {
+  if (HUD_V[q] === v) return;
+  HUD_V[q] = v;
+  const el = hel(q);
+  if (el) el.textContent = v;
+}
+function hclass(q, c, on) {
+  const k = q + '.' + c;
+  if (HUD_V[k] === on) return;
+  HUD_V[k] = on;
+  const el = hel(q);
+  if (el) el.classList.toggle(c, on);
+}
 function hud() {
   if (!G.f.length) return;
   const A = G.f[0];
@@ -475,25 +546,27 @@ function hud() {
     TA = agg(0);
     TB = agg(1);
   }
-  $('#meHp').style.width = (TA.hp / TA.maxHp) * 100 + '%';
-  $('#foeHp').style.width = (TB.hp / TB.maxHp) * 100 + '%';
-  $('#meGhost').style.width = (TA.ghost / TA.maxHp) * 100 + '%';
-  $('#foeGhost').style.width = (TB.ghost / TB.maxHp) * 100 + '%';
-  $('#meHpT').textContent = `${fa(Math.ceil(TA.hp))} / ${fa(TA.maxHp)}`;
-  $('#foeHpT').textContent = `${fa(Math.ceil(TB.hp))} / ${fa(TB.maxHp)}`;
+  // Touch the DOM only when a shown value changes: rewriting it every frame forced the browser
+  // to redo style, layout and paint of the whole HUD 60 times a second (the main lag on phones).
+  const pct = (v, m) => Math.round((Math.max(0, v) / m) * 200) / 2 + '%';
+  hset('#meHp', 'width', pct(TA.hp, TA.maxHp));
+  hset('#foeHp', 'width', pct(TB.hp, TB.maxHp));
+  hset('#meGhost', 'width', pct(TA.ghost, TA.maxHp));
+  hset('#foeGhost', 'width', pct(TB.ghost, TB.maxHp));
+  htext('#meHpT', `${fa(Math.ceil(TA.hp))} / ${fa(TA.maxHp)}`);
+  htext('#foeHpT', `${fa(Math.ceil(TB.hp))} / ${fa(TB.maxHp)}`);
   const left = Math.max(0, Math.ceil(MATCH_TIME - G.time));
-  $('#clock').textContent = fa(left);
-  $('#clock').classList.toggle('hot', G.time >= SHRINK_AT && G.phase === 'fight');
-  const btn = $('#abilityBtn'),
-    ready = A.abilityCd <= 0 && G.phase === 'fight';
-  btn.classList.toggle('ready', ready);
-  btn.style.setProperty('--p', 1 - A.abilityCd / A.abilityMax);
-  $('#abCd').textContent = ready ? 'آماده! بزن' : `${fa(Math.ceil(A.abilityCd))} ثانیه`;
-  document.querySelectorAll('#pips .pip').forEach((el, i) => {
+  htext('#clock', fa(left));
+  hclass('#clock', 'hot', G.time >= SHRINK_AT && G.phase === 'fight');
+  const ready = A.abilityCd <= 0 && G.phase === 'fight';
+  hclass('#abilityBtn', 'ready', ready);
+  hset('#abilityBtn', '--p', String(Math.round((1 - A.abilityCd / A.abilityMax) * 60) / 60));
+  htext('#abCd', ready ? 'آماده! بزن' : `${fa(Math.ceil(A.abilityCd))} ثانیه`);
+  for (let i = 0; i < 3; i++) {
     const p = i < A.charges ? 1 : i === A.charges ? A.chargeT / NUDGE_RECHARGE : 0;
-    el.style.setProperty('--p', p);
-    el.classList.toggle('full', p >= 1);
-  });
+    hset('#pips .pip:nth-child(' + (i + 1) + ')', '--p', String(Math.round(p * 40) / 40));
+    hclass('#pips .pip:nth-child(' + (i + 1) + ')', 'full', p >= 1);
+  }
 }
 
 function loop(ts) {
@@ -509,8 +582,20 @@ function loop(ts) {
     G.slow -= dt;
     dt *= 0.35;
   }
-  update(dt);
-  draw();
-  hud();
+  if (PROF) {
+    const t0 = performance.now();
+    update(dt);
+    const t1 = performance.now();
+    draw();
+    const t2 = performance.now();
+    hud();
+    PROF.push([t1 - t0, t2 - t1, performance.now() - t2, ts]);
+    if (PROF.length > 600) PROF.shift();
+    profMeter(ts);
+  } else {
+    update(dt);
+    draw();
+    hud();
+  }
   raf = requestAnimationFrame(loop);
 }

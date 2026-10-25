@@ -70,6 +70,7 @@ function showPick(){
 }
 $('#ov').addEventListener('click',e=>{const o=e.target.closest('[data-opt]');if(o&&G&&G.phase==='pick')choose(+o.dataset.opt);const o2=e.target.closest('[data-opt2]');if(o2&&G&&G.phase==='pick2')choose2(+o2.dataset.opt2)});
 function hudIdle(){
+  for(const k in HUD_V)delete HUD_V[k]; // hud() caches what it wrote; this resets the HUD
   ['#meHp','#foeHp','#meGhost','#foeGhost'].forEach(s=>$(s).style.width='0%');
   $('#meHpT').textContent='';$('#foeHpT').textContent='';$('#meCls').textContent='';$('#foeCls').textContent='';
   $('#clock').textContent=fa(MATCH_TIME);$('#clock').classList.remove('hot');
