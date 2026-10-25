@@ -85,6 +85,15 @@ const MIGRATIONS = [
      at integer not null
    )`,
   `create index errors_at on errors(at)`,
+  // In-app purchases: one row per store purchase token, so a token can never grant twice.
+  `create table purchases (
+     token text primary key,
+     store text not null,
+     player_id text not null,
+     product text not null,
+     gems integer not null,
+     at integer not null
+   )`,
 ];
 
 export function openDb(path: string): DB {

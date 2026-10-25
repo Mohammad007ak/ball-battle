@@ -12,6 +12,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         installCrashRecorder(getApplicationContext());
+        registerPlugin(StorePlugin.class);
         super.onCreate(savedInstanceState);
     }
 

@@ -4,6 +4,7 @@ import * as E from '@chakachak/engine';
 import * as P from '@chakachak/protocol';
 import type { Art } from './art';
 import type { Backend } from './net/backend';
+import type { GemStore } from './net/store';
 import { native, type Native } from './native';
 import { makeQuality, type Quality } from './quality';
 import { Telemetry } from './telemetry';
@@ -22,6 +23,8 @@ export interface Bridge {
   T: Telemetry;
   /** Match canvas render quality (adapts to slow phones). */
   Q: Quality;
+  /** Gem packs through the store (Bazaar); null without a real server. */
+  IAP: GemStore | null;
 }
 
 export function makeBridge(
@@ -29,7 +32,8 @@ export function makeBridge(
   B: Balance = defaultBalance,
   ART: Art | null = null,
   T: Telemetry = new Telemetry(null),
+  IAP: GemStore | null = null,
 ): Bridge {
   const Q = makeQuality((level) => T.track('quality', { level }));
-  return { E, B, EC, P, BK, ART, N: native, T, Q };
+  return { E, B, EC, P, BK, ART, N: native, T, Q, IAP };
 }

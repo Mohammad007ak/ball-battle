@@ -9,6 +9,7 @@ import { bootDone, bootProgress } from './boot';
 import { makeBridge } from './bridge';
 import type { Backend } from './net/backend';
 import { HttpBackend } from './net/http-backend';
+import { GemStore } from './net/store';
 import { LocalBackend } from './net/local-backend';
 import { native } from './native';
 import { Telemetry } from './telemetry';
@@ -46,7 +47,9 @@ if (api) {
 
 bootProgress(0.3, 'بارگذاری تصاویر…');
 const art = await loadArt(balance, (d) => bootProgress(0.3 + d * 0.5));
-const CK = makeBridge(backend, balance, art, telemetry);
+const iap = new GemStore(http);
+await iap.init();
+const CK = makeBridge(backend, balance, art, telemetry, iap);
 (globalThis as unknown as { CK: unknown }).CK = CK;
 native.onActive((active) => {
   if (active) telemetry.track('session_start', { app: __APP_VERSION__ });

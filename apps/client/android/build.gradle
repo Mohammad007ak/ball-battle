@@ -21,6 +21,11 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        // Poolakey (Cafe Bazaar in-app billing) is published only on JitPack.
+        maven {
+            url 'https://jitpack.io'
+            content { includeGroup 'com.github.cafebazaar.Poolakey' }
+        }
     }
 }
 

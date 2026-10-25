@@ -3,6 +3,7 @@ import {
   ActRequestSchema,
   ErrorReportSchema,
   EventsRequestSchema,
+  IapRequestSchema,
   OtpRequestSchema,
   VerifyRequestSchema,
 } from '@chakachak/protocol';
@@ -20,6 +21,7 @@ import {
 import { RemoteConfig } from './config';
 import { privacyRoutes } from './privacy';
 import type { DB } from './db';
+import { redeem, type StoreVerifier } from './iap';
 import { act, loadProfile, me } from './game';
 import { RateLimiter } from './ratelimit';
 import type { SmsProvider } from './sms';
@@ -36,6 +38,8 @@ export interface Ctx {
   dev: boolean;
   /** Fixed OTP for development and tests (only with the console SMS provider). */
   testOtp?: string;
+  /** Purchase verifiers by store; a store without one has no gem shop yet. */
+  stores: Record<string, StoreVerifier>;
 }
 
 export interface AppOptions {
@@ -45,9 +49,17 @@ export interface AppOptions {
   now?: () => number;
   dev?: boolean;
   testOtp?: string;
+  stores?: Record<string, StoreVerifier>;
 }
 
-const STATUS: Record<string, number> = { unauthorized: 401, rateLimited: 429, tooSoon: 429 };
+const STATUS: Record<string, number> = {
+  unauthorized: 401,
+  rateLimited: 429,
+  tooSoon: 429,
+  storeOff: 503,
+  notYours: 409,
+  notVerified: 402,
+};
 
 export function buildApp(o: AppOptions) {
   const now = o.now ?? Date.now;
@@ -59,6 +71,7 @@ export function buildApp(o: AppOptions) {
     limit: new RateLimiter(now),
     config: new RemoteConfig(o.db, now),
     dev: !!o.dev,
+    stores: o.stores ?? {},
     ...(o.testOtp ? { testOtp: o.testOtp } : {}),
   };
   const app = Fastify({ logger: false, bodyLimit: 512 * 1024, trustProxy: true });
@@ -95,6 +108,7 @@ export function buildApp(o: AppOptions) {
     version: c.config.version,
     balance: c.config.get(),
     phoneLogin,
+    stores: Object.keys(c.stores),
   }));
   app.post('/v1/auth/otp', async (req) => {
     await requestOtp(c, parse(OtpRequestSchema, req.body).phone, req.ip);
@@ -132,6 +146,13 @@ export function buildApp(o: AppOptions) {
     const id = player(req),
       b = parse(ActRequestSchema, req.body);
     return { ...act(c, id, b.action, b.idem), profile: loadProfile(c, id), now: c.now() };
+  });
+  app.post('/v1/iap', async (req) => {
+    const id = player(req),
+      b = parse(IapRequestSchema, req.body);
+    if (!c.limit.take('iap:' + id, 20, 60_000)) throw new AuthError('rateLimited');
+    const r = await redeem(c, id, b.store, b.product, b.token);
+    return { ok: true, ...r, profile: loadProfile(c, id) };
   });
   app.post('/v1/events', async (req) => {
     const id = player(req),

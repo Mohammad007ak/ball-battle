@@ -12,5 +12,5 @@ it('snapshots the database and keeps the newest copies', () => {
   const files = readdirSync(join(dir, 'backups'));
   expect(files).toHaveLength(2);
   const copy = openDb(join(dir, 'backups', files[1]!));
-  expect(copy.prepare('select count(*) n from migrations').get()).toMatchObject({ n: 14 });
+  expect(copy.prepare('select count(*) n from migrations').get()).toMatchObject({ n: 15 });
 });

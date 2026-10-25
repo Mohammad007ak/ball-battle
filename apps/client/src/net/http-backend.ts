@@ -25,6 +25,7 @@ export class HttpBackend implements Backend, AccountApi {
   private day = 0;
   private isLinked = false;
   private phone = false;
+  private storeList: string[] = [];
   private token_: string | null = null;
 
   constructor(private base: string) {}
@@ -41,8 +42,12 @@ export class HttpBackend implements Backend, AccountApi {
       }
     }
     if (!this.token_) this.apply(await this.req<Me>('POST', '/v1/auth/guest'));
-    const cfg = await this.req<{ balance: Balance; phoneLogin?: boolean }>('GET', '/v1/config');
+    const cfg = await this.req<{ balance: Balance; phoneLogin?: boolean; stores?: string[] }>(
+      'GET',
+      '/v1/config',
+    );
     this.phone = !!cfg.phoneLogin;
+    this.storeList = cfg.stores ?? [];
     return cfg.balance;
   }
 
@@ -66,6 +71,20 @@ export class HttpBackend implements Backend, AccountApi {
   }
   async refresh() {
     this.apply(await this.req<Me>('GET', '/v1/me'));
+  }
+  /** Stores whose purchases the server can verify (gem shop open). */
+  stores(): string[] {
+    return this.storeList;
+  }
+  /** Send a store purchase to the server; resolves with the gems granted (0 if already counted). */
+  async iap(store: string, product: string, token: string): Promise<number> {
+    const r = await this.req<{ granted: number; profile: Profile }>('POST', '/v1/iap', {
+      store,
+      product,
+      token,
+    });
+    this.S = r.profile;
+    return r.granted;
   }
   phoneEnabled(): boolean {
     return this.phone;

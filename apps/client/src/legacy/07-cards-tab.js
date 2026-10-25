@@ -20,6 +20,7 @@ function renderCards(){
   $('#shopgrid').innerHTML=SHOP.map(o=>`<button class="offer" data-buy="${o.tier}" ${S.gems<o.price?'disabled':''}><b class="tx">${CHESTS[o.tier].name}</b><img src="${chestIcon(o.tier)}" alt="صندوقچهٔ ${CHESTS[o.tier].name}"><small class="odds">${chestOddsText(o.tier)}</small><span class="price gp tx"><svg class="gm" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10l4 6-9 12L3 9Z" fill="#34d399" stroke="#064e3b" stroke-width="1.6" stroke-linejoin="round"/><path d="M3 9h18M7 3l2 6 3 12M17 3l-2 6-3 12" fill="none" stroke="#064e3b" stroke-width="1" opacity=".55"/><path d="M8 4h4l-2 4Z" fill="#d1fae5"/></svg>${fa(o.price)}</span></button>`).join('');
   $('#daily').innerHTML=dailySkins().map(([k,st])=>{const own=(S.skins[k]||[]).includes(st),P=SKIN_STYLES[st].price;
     return `<button class="offer skin" data-skin="${k}:${st}" ${own||S.gems<P?'disabled':''}><span class="sname tx">${SKIN_STYLES[st].name}</span><img src="${cardArt(k,st)}" alt="اسکین ${SKIN_STYLES[st].name} ${CLASSES[k].name}">${own?'<span class="price owned">خریده شد</span>':`<span class="price gp tx"><svg class="gm" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10l4 6-9 12L3 9Z" fill="#34d399" stroke="#064e3b" stroke-width="1.6" stroke-linejoin="round"/><path d="M3 9h18M7 3l2 6 3 12M17 3l-2 6-3 12" fill="none" stroke="#064e3b" stroke-width="1" opacity=".55"/><path d="M8 4h4l-2 4Z" fill="#d1fae5"/></svg>${fa(P)}</span>`}</button>`}).join('');
+  renderGemPacks();
   $('#dailyT').innerHTML=ICO.clock+fmtHMS(msToMidnight());
   if(!$('#cardModal').hidden)renderCardModal();
 }
@@ -58,3 +59,22 @@ $('#cardModal').addEventListener('click',e=>{
 /** Drop odds shown before buying (CLAUDE.md rule 7). */
 function chestOddsText(tier){const T=CHESTS[tier],p=x=>fa(Math.round(x*100))+'٪';
   return `${fa(T.coins[0])}–${fa(T.coins[1])} سکه · ${fa(T.cards)} کارت · کارت جدید ${p(T.newP)}`+(T.skinP?` · اسکین ${p(T.skinP)}`:'')}
+
+/* gem packs: paid in the store app (Bazaar), verified and granted by the server (src/net/store.ts) */
+let gemBusy=false;
+function renderGemPacks(){
+  const open=!!(CK.IAP&&CK.IAP.open()),bag=artUrl('gem-bag');
+  $('#gempacks').innerHTML=(CK.B.game.GEM_PACKS||[]).map((p,i)=>`<button class="offer gpack" data-gems="${p.id}" ${open&&!gemBusy?'':'disabled'}>
+    ${bag?`<img src="${bag}" alt="" style="--s:${0.78+i*0.11}">`:''}<b class="tx">${fa(p.gems)} الماس</b>
+    <span class="price tx">${open?fa(p.toman)+' تومان':'به‌زودی'}</span></button>`).join('');
+}
+const IAP_ERR={canceled:null,noBazaar:'برای خرید، برنامهٔ بازار را نصب و وارد حساب شو',notVerified:'خرید تأیید نشد؛ اگر پولی کم شده، بازار برمی‌گرداند',network:'اتصال برقرار نشد؛ خرید ذخیره شد و دفعهٔ بعد اعمال می‌شود'};
+$('#gempacks').addEventListener('click',async e=>{
+  const b=e.target.closest('[data-gems]');if(!b||b.disabled||gemBusy)return;
+  gemBusy=true;renderGemPacks();
+  try{const r=await CK.IAP.buy(b.dataset.gems);S=CK.BK.profile();
+    if(r.ok){sfx('coin');toast(`${fa(r.granted)} الماس اضافه شد`);CK.T.track('purchase',{product:b.dataset.gems,gems:r.granted})}
+    else{const m=IAP_ERR[r.code];if(m!==null)toast(m||'خرید انجام نشد')}}
+  finally{gemBusy=false;renderCards();$('#gems')&&($('#gems').textContent=fa(S.gems))}
+});
+if(CK.IAP&&CK.IAP.open())CK.IAP.resume().then(n=>{if(n>0){S=CK.BK.profile();toast(`${fa(n)} الماس از خرید قبلی اضافه شد`);tab==='battle'?renderBattle():renderCards()}});

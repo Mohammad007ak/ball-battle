@@ -8,7 +8,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // versionName follows apps/client/package.json; bump versionCode for every store upload.
-        versionCode 1
+        versionCode 2
         versionName new groovy.json.JsonSlurper().parse(file('../../package.json')).version
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
@@ -34,7 +34,13 @@ android {
     // Each store needs its own billing library (Poolakey / Myket), so one build per store.
     flavorDimensions = ['store']
     productFlavors {
-        bazaar { dimension 'store'; buildConfigField 'String', 'STORE', '"bazaar"' }
+        bazaar {
+            dimension 'store'
+            buildConfigField 'String', 'STORE', '"bazaar"'
+            // Bazaar's public RSA key (Pishkhan → in-app billing). Optional: the server verifies
+            // every purchase with Bazaar anyway; with the key Poolakey also checks it locally.
+            buildConfigField 'String', 'BAZAAR_RSA_KEY', '"' + (findProperty('bazaarRsaKey') ?: '') + '"'
+        }
         myket { dimension 'store'; buildConfigField 'String', 'STORE', '"myket"' }
     }
     buildFeatures { buildConfig = true }
@@ -63,6 +69,7 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+    bazaarImplementation 'com.github.cafebazaar.Poolakey:poolakey:2.3.0'
 }
 
 apply from: 'capacitor.build.gradle'
