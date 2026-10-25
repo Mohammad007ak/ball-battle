@@ -41,9 +41,14 @@ function renderBattle(){
   renderSlots();
   if(!heroRaf)heroRaf=requestAnimationFrame(heroLoop);
 }
-function heroLoop(ts){heroRaf=0;if($('#battle').hidden||G)return;paintHero(ts/1000);heroRaf=requestAnimationFrame(heroLoop)}
+/* menu hero: ~30 fps, paused while the page scrolls or the canvas is off screen, so scrolling stays smooth on slow phones */
+let heroLast=0,heroScroll=0,heroVis=true;
+window.addEventListener('scroll',()=>{heroScroll=performance.now()},{passive:true,capture:true});
+if(window.IntersectionObserver)new IntersectionObserver(es=>{heroVis=es[es.length-1].isIntersecting}).observe($('#arenaCv'));
+function heroLoop(ts){heroRaf=0;if($('#battle').hidden||G)return;
+  if(heroVis&&ts-heroLast>=32&&ts-heroScroll>200){heroLast=ts;paintHero(ts/1000)}heroRaf=requestAnimationFrame(heroLoop)}
 function paintHero(t){
-  const cvA=$('#arenaCv'),w=cvA.clientWidth||340,h=cvA.clientHeight||w*0.8,d=Math.min(window.devicePixelRatio||1,2),pw=Math.round(w*d),ph=Math.round(h*d);
+  const cvA=$('#arenaCv'),w=cvA.clientWidth||340,h=cvA.clientHeight||w*0.8,d=Math.min(window.devicePixelRatio||1,1.5),pw=Math.round(w*d),ph=Math.round(h*d);
   if(cvA.width!==pw||cvA.height!==ph){cvA.width=pw;cvA.height=ph}
   const c=cvA.getContext('2d'),li=leagueOf(S.trophies);
   c.setTransform(1,0,0,1,0,0);{const a=arenaCanvas(li,pw);c.drawImage(a,0,(ph-a.height)/2)}

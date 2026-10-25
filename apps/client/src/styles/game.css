@@ -188,9 +188,8 @@ small {
   width: 180px;
   height: 180px;
   border-radius: 50%;
-  background: var(--hc, #4fc3f7);
+  background: radial-gradient(closest-side, var(--hc, #4fc3f7), transparent);
   opacity: 0.12;
-  filter: blur(30px);
   pointer-events: none;
 }
 .hero .info {
@@ -1030,9 +1029,8 @@ small {
   width: 200px;
   height: 200px;
   border-radius: 50%;
-  background: var(--hc, #4fc3f7);
+  background: radial-gradient(closest-side, var(--hc, #4fc3f7), transparent);
   opacity: 0.13;
-  filter: blur(36px);
   pointer-events: none;
 }
 .detail > * {
