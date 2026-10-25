@@ -47,8 +47,13 @@ Tests: `pnpm test` (116 green), `pnpm typecheck`, `pnpm lint`, `pnpm sim --full 
   `apps/server/src/telemetry.ts`; client `src/telemetry.ts` (`CK.T.track`): session_start, match, chest_open.
 - [x] 5. Error reports: `errors` table, `POST /v1/errors` (no login needed); WebView global handlers;
   native crashes saved by `MainActivity` and sent on next launch.
+- [x] Device feedback round (Galaxy A32, server on Hamravesh `https://chakachak.darkube.ir`):
+  adaptive render quality (`src/quality.ts`), portrait 2:3 arena 300×450 / 400×600
+  (`rules.aspect`, re-tuned balance), painted arenas (arena photos unused), menu backdrop removed,
+  loading screen with logo + progress (`src/boot.ts`), starter chest of 2 random commons,
+  phone login hidden without SMS, startup hardening.
 - [ ] 2. IAP (Poolakey / Myket native plugins + server verification), 3. shop UI, 6. size, 7. release
-  (`docs/RELEASE.md` started).
+  (`docs/RELEASE.md` started). App id `ir.chakachak.game` still unconfirmed; gem pack prices unknown.
 - Sandbox note: Maven Central returned 429 here; a local `~/.gradle/init.d` mirror script was used (not in repo).
 
 ## Things to know
