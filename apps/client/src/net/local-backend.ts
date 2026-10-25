@@ -23,7 +23,8 @@ export class LocalBackend implements Backend {
     } catch {
       raw = {};
     }
-    this.S = EC.fixProfile(B, raw);
+    // First launch offline: a new profile with the starter chest, like a new server account.
+    this.S = Object.keys(raw).length ? EC.fixProfile(B, raw) : EC.freshProfile(B, Math.random);
   }
 
   profile(): Profile {

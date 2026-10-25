@@ -36,6 +36,19 @@ function setup() {
 }
 
 describe('server', () => {
+  it('a new account gets a starter chest of two random common characters', async () => {
+    const s = setup(),
+      tok = await s.guest();
+    const p = (await s.call('GET', '/v1/me', tok)).body.profile;
+    expect(p.starter).toHaveLength(2);
+    expect(p.team).toEqual(p.starter);
+    for (const k of p.starter) {
+      expect(B.game.CLASSES[k as keyof typeof B.game.CLASSES].rar).toBe('common');
+      expect(p.lv[k]).toBe(1);
+    }
+    expect((await s.act(tok, { t: 'starterSeen' })).body.profile.starter).toBeUndefined();
+  });
+
   it('guest account is created without login and keeps progress', async () => {
     const s = setup();
     const tok = await s.guest();
@@ -131,7 +144,9 @@ describe('server', () => {
   it('linking a phone keeps guest progress; a new device can switch to it', async () => {
     const s = setup(),
       tok = await s.guest();
-    await s.act(tok, { t: 'team', i: 0, k: 'rage' });
+    // Swap the two starter characters: a change that must survive linking.
+    const [a, b] = (await s.call('GET', '/v1/me', tok)).body.profile.team as string[];
+    await s.act(tok, { t: 'team', i: 0, k: b });
     expect((await s.call('POST', '/v1/auth/otp', undefined, { phone: '۰۹۱۲۱۲۳۴۵۶۷' })).status).toBe(
       200,
     );
@@ -143,7 +158,7 @@ describe('server', () => {
     expect(link.body).toMatchObject({
       outcome: 'linked',
       linked: true,
-      profile: { team: ['rage', 'archer'] },
+      profile: { team: [b, a] },
     });
     // New phone, fresh guest, then log in with the same number → back to the saved account.
     const tok2 = await s.guest();
@@ -153,7 +168,7 @@ describe('server', () => {
       phone: '9121234567',
       code: '12345',
     });
-    expect(sw.body).toMatchObject({ outcome: 'switched', profile: { team: ['rage', 'archer'] } });
+    expect(sw.body).toMatchObject({ outcome: 'switched', profile: { team: [b, a] } });
   });
 
   it('wrong codes are limited and account deletion revokes access', async () => {

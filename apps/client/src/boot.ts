@@ -4,6 +4,7 @@ let shown = 0;
 
 if (el)
   el.innerHTML =
+    '<h1 class="boot-logo" aria-label="چکاچک"><span>چکاچک</span></h1>' +
     '<div class="boot-ui"><div class="boot-bar"><i></i></div><b class="boot-txt">در حال بارگذاری…</b></div>';
 
 /** Move the bar to `p` (0–1, never backwards) and optionally change the status text. */

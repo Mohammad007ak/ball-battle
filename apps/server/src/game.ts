@@ -7,7 +7,7 @@ import { tx } from './db';
 import { assertNonNegative, writeLedger } from './ledger';
 
 /** Server-side randomness for chests and match seeds (never the client's). */
-const rand = () => randomInt(0, 2 ** 47) / 2 ** 47;
+export const rand = () => randomInt(0, 2 ** 47) / 2 ** 47;
 
 /** Calendar day in Iran (yyyymmdd) for the daily shop. */
 export function dayKey(now: number): number {

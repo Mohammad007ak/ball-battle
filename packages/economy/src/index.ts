@@ -30,6 +30,8 @@ export interface Profile {
   cycle: number;
   slots: (ChestSlot | null)[];
   mode: '1v1' | '2v2';
+  /** Starter chest not yet shown: the two random commons the account began with. */
+  starter?: ClassKey[];
 }
 
 export type Item =
@@ -50,8 +52,14 @@ const fail = (code: string, need?: number): never => {
   throw new EconomyError(code, need);
 };
 
-export function freshProfile(B: Balance): Profile {
+/**
+ * A new account. With `rand`, it starts with a starter chest: two random common characters
+ * (shown to the player once, then cleared by the `starterSeen` action). Without it, the fixed
+ * STARTERS (used for repairs, simulations and tests).
+ */
+export function freshProfile(B: Balance, rand?: Rand): Profile {
   const F = B.game.fresh;
+  const starters = rand ? pickCommons(B, rand, 2) : (B.game.STARTERS as ClassKey[]);
   const rec = (v: (k: ClassKey) => number) =>
     Object.fromEntries(CLASS_KEYS.map((k) => [k, v(k)])) as Record<ClassKey, number>;
   return {
@@ -60,8 +68,8 @@ export function freshProfile(B: Balance): Profile {
     trophies: 0,
     wins: 0,
     losses: 0,
-    team: [...(B.game.STARTERS as ClassKey[])],
-    lv: rec((k) => ((B.game.STARTERS as string[]).includes(k) ? 1 : 0)),
+    team: [...starters],
+    lv: rec((k) => (starters.includes(k) ? 1 : 0)),
     cards: rec(() => 0),
     ab: rec(() => 0),
     skins: {},
@@ -69,7 +77,16 @@ export function freshProfile(B: Balance): Profile {
     cycle: 0,
     slots: F.slots.map((s) => (s ? { tier: s.tier, end: null } : null)),
     mode: '1v1',
+    ...(rand ? { starter: [...starters] } : {}),
   };
+}
+
+function pickCommons(B: Balance, rand: Rand, n: number): ClassKey[] {
+  const pool = CLASS_KEYS.filter((k) => B.game.CLASSES[k].rar === 'common');
+  const out: ClassKey[] = [];
+  while (out.length < n && pool.length)
+    out.push(pool.splice(Math.floor(rand() * pool.length), 1)[0]!);
+  return out;
 }
 
 /** Repair a stored profile (prototype `fixState` + `validateSkins`). */
@@ -97,6 +114,7 @@ export function fixProfile(B: Balance, raw: Partial<Profile>): Profile {
   for (const k of Object.keys(S.skin) as ClassKey[])
     if (S.skin[k] && !(S.skins[k] || []).includes(S.skin[k]!)) S.skin[k] = '';
   if (S.mode !== '2v2') S.mode = '1v1';
+  if (S.starter && !(Array.isArray(S.starter) && S.starter.every((k) => S.lv[k]))) delete S.starter;
   return S;
 }
 

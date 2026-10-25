@@ -1,5 +1,6 @@
 import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import { freshProfile } from '@chakachak/economy';
+import { rand } from './game';
 import type { Ctx } from './app';
 import { tx } from './db';
 import { normalizePhone, phoneHash } from './phone';
@@ -56,7 +57,7 @@ export function createGuest(c: Ctx, ip: string) {
   return tx(c.db, () => {
     c.db
       .prepare('insert into players (id, phone_hash, profile, created_at) values (?, null, ?, ?)')
-      .run(id, JSON.stringify(freshProfile(c.config.get())), now);
+      .run(id, JSON.stringify(freshProfile(c.config.get(), rand)), now);
     return { token: newSession(c, id, now), playerId: id };
   });
 }
@@ -98,7 +99,7 @@ export function verifyOtp(c: Ctx, rawPhone: string, code: string, currentId: str
       playerId = randomBytes(12).toString('base64url');
       c.db
         .prepare('insert into players (id, phone_hash, profile, created_at) values (?, ?, ?, ?)')
-        .run(playerId, h, JSON.stringify(freshProfile(c.config.get())), now);
+        .run(playerId, h, JSON.stringify(freshProfile(c.config.get(), rand)), now);
       outcome = 'created';
     }
     return { token: newSession(c, playerId, now), playerId, outcome };

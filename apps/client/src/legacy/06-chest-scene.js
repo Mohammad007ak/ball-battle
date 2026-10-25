@@ -50,7 +50,7 @@ function itemHTML(it){
 }
 $('#cmodal').addEventListener('click',e=>{
   if(!CH)return;
-  if(e.target.closest('#chestDone')){$('#cmodal').hidden=true;CH=null;tab==='battle'?renderBattle():renderCards();return}
+  if(e.target.closest('#chestDone')){$('#cmodal').hidden=true;if(CH&&CH.starter)act({t:'starterSeen'});CH=null;tab==='battle'?renderBattle():renderCards();return}
   if(e.target.closest('#chSkip')){chSummary();return}
   if(CA)chTap();
 });

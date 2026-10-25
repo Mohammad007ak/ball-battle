@@ -25,6 +25,7 @@ export type ProfileAction =
   | { t: 'equip'; k: ClassKey; st: string }
   | { t: 'team'; i: number; k: ClassKey }
   | { t: 'mode'; mode: '1v1' | '2v2' }
+  | { t: 'starterSeen' }
   | { t: 'cheat'; what: string };
 
 export interface ActionCtx {
@@ -62,6 +63,9 @@ export function applyAction(
     case 'mode':
       S.mode = a.mode;
       return undefined;
+    case 'starterSeen':
+      delete S.starter;
+      return undefined;
     case 'cheat':
       if (!c.dev) throw new EconomyError('forbidden');
       return (cheat(B, S, a.what, c), undefined);
@@ -80,5 +84,8 @@ function cheat(B: Balance, S: Profile, what: string, c: ActionCtx) {
   if (what === 'fill')
     S.slots = S.slots.map((s) => s || { tier: Math.floor(c.rand() * 5), end: null });
   if (what === 'fast') S.slots.forEach((s) => s && (s.end = c.now));
-  if (what === 'reset') Object.assign(S, freshProfile(B));
+  if (what === 'reset') {
+    for (const k of Object.keys(S)) delete (S as unknown as Record<string, unknown>)[k];
+    Object.assign(S, freshProfile(B, c.rand));
+  }
 }

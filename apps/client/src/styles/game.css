@@ -3446,3 +3446,12 @@ svg.tro>*{display:none}
 #boot .boot-bar i{display:block;height:100%;width:calc(var(--boot,0)*100%);border-radius:8px;background:linear-gradient(180deg,#ffe27a,#ffb020);box-shadow:inset 0 3px 0 rgba(255,255,255,.45);transition:width .35s ease-out;
   background-image:repeating-linear-gradient(135deg,transparent 0 8px,rgba(255,255,255,.22) 8px 16px),linear-gradient(180deg,#ffe27a,#ffb020)}
 #boot .boot-txt{font-family:var(--display);font-size:20px;color:#fff;-webkit-text-stroke:5px #071233;paint-order:stroke fill;letter-spacing:.5px}
+/* Loading-screen logo: chunky Lalezar, gold fill, dark ink outline, clash-spark pop. */
+#boot .boot-logo{position:absolute;top:calc(9vh + env(safe-area-inset-top));inset-inline:0;margin:0;text-align:center;pointer-events:none;
+  font-family:var(--display);font-weight:400;font-size:clamp(64px,22vw,120px);line-height:1;transform:rotate(-4deg);animation:bootPop .7s cubic-bezier(.2,1.6,.4,1) both}
+#boot .boot-logo span{position:relative;display:inline-block;padding:0 .12em;
+  background:linear-gradient(180deg,#fff7c2 0%,#ffd84a 38%,#ff9f1a 70%,#e8590c 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  -webkit-text-stroke:0;filter:drop-shadow(0 0 0 #071233) drop-shadow(3px 0 0 #071233) drop-shadow(-3px 0 0 #071233) drop-shadow(0 3px 0 #071233) drop-shadow(0 -3px 0 #071233) drop-shadow(0 9px 0 #071233) drop-shadow(0 14px 18px rgba(0,0,0,.45));
+  animation:bootPulse 1.6s ease-in-out .7s infinite}
+@keyframes bootPop{0%{opacity:0;transform:rotate(-4deg) scale(.3)}100%{opacity:1;transform:rotate(-4deg) scale(1)}}
+@keyframes bootPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}

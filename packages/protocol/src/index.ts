@@ -39,6 +39,7 @@ export const ActionSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('equip'), k: cls, st: z.string().max(30) }),
   z.object({ t: z.literal('team'), i: int.min(0).max(1), k: cls }),
   z.object({ t: z.literal('mode'), mode: z.enum(['1v1', '2v2']) }),
+  z.object({ t: z.literal('starterSeen') }),
   z.object({ t: z.literal('matchStart'), mode: z.enum(['1v1', '2v2']) }),
   z.object({ t: z.literal('match'), id: z.string().max(64), log: MatchLogSchema }),
   z.object({ t: z.literal('cheat'), what: z.string().max(20) }),
