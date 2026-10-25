@@ -1,7 +1,8 @@
 {
   "rules": {
-    "world1v1": 360,
-    "world2v2": 480,
+    "world1v1": 300,
+    "world2v2": 400,
+    "aspect": 1.5,
     "countdown": 3,
     "levelStep": 0.09,
     "defaultRadius": 24,

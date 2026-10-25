@@ -3,7 +3,7 @@ $('#abilityBtn').addEventListener('click',()=>{if(G&&G.f.length)useAbility(G.f[0
 cv.addEventListener('pointerdown',e=>{
   if(!G||!G.f.length)return;e.preventDefault();
   if(G.phase==='finish'){if(G.fin&&G.fin.w===0)finGo();return}
-  const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*VW-M,y=(e.clientY-r.top)/r.height*VW-M;
+  const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*VW-M,y=(e.clientY-r.top)/r.height*VH-M;
   const ok=nudge(G.f[0],x,y);
   G.taps.push({x,y,life:0.45,ok});
 });

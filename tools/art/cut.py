@@ -110,5 +110,6 @@ for f in sorted(SRC.glob('arena-*.png')):
     idx = int(f.stem.split('-')[1]) - 1
     save(Image.open(f).convert('RGB'), f'arena-{idx}.webp', 95)
 
-save(Image.open(SRC / 'menu-bg.png').convert('RGB'), 'menu-bg.webp', 95)
+# Menu background removed (the user found it unprofessional); source kept in assets/art-src.
+# save(Image.open(SRC / 'menu-bg.png').convert('RGB'), 'menu-bg.webp', 95)
 save(Image.open(SRC / 'splash.png').convert('RGB'), 'splash.webp', 95)

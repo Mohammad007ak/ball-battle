@@ -516,8 +516,10 @@ small {
 .arena-wrap {
   position: relative;
   width: 100%;
-  aspect-ratio: 1;
-  max-width: 100%;
+  /* Portrait arena (set from the engine's aspect in setWorld); shrinks on short screens. */
+  aspect-ratio: var(--arena-ar, 388 / 568);
+  max-width: min(100%, calc((100dvh - 330px) * 388 / 568));
+  margin-inline: auto;
   border-radius: 18px;
   box-shadow:
     0 0 0 1px var(--line),
@@ -1753,7 +1755,7 @@ small {
 }
 .mt img {
   width: 96px;
-  height: 96px;
+  height: 140px;
   border-radius: 12px;
   border: 2px solid var(--line);
   display: block;
@@ -3426,12 +3428,10 @@ body {
   text-align: center;
   color: #d6e0ff;
 }
-body[data-offline]::before{content:"در حال اتصال به سرور…";position:fixed;inset:0;display:grid;place-items:center;z-index:99;background:#0c1d4f;color:#fff;font-family:var(--display);font-size:22px}
 .phin{width:100%;padding:10px 14px;border-radius:14px;border:2px solid var(--ink);background:rgba(4,10,34,.7);color:#fff;font:inherit;font-size:20px;text-align:center;letter-spacing:2px;direction:ltr}
 .acct small{display:block;text-align:center;margin-bottom:6px}
 
 /* ===== generated art (public/art, see tools/art/cut.py) ===== */
-body{background:linear-gradient(180deg,rgba(10,20,60,.25),rgba(10,20,60,.55)) fixed,url(/art/menu-bg.webp) center top/cover fixed,#0c1d4f}
 .coin-ico{background:url(/art/coin.webp) center/contain no-repeat;box-shadow:none;border-radius:0}
 svg.gm{background:url(/art/gem.webp) center/contain no-repeat}
 svg.gm>*{display:none}
@@ -3441,3 +3441,8 @@ svg.tro{background:url(/art/trophy.webp) center/contain no-repeat}
 svg.tro>*{display:none}
 #boot{position:fixed;inset:0;z-index:100;background:#0c1d4f url(/art/splash.webp) center/cover no-repeat;transition:opacity .4s}
 #boot.gone{opacity:0;pointer-events:none}
+#boot .boot-ui{position:absolute;inset:auto 0 calc(9vh + env(safe-area-inset-bottom)) 0;display:flex;flex-direction:column;align-items:center;gap:10px;padding:0 15%}
+#boot .boot-bar{width:100%;height:18px;border-radius:12px;border:3px solid #071233;background:rgba(4,10,34,.75);box-shadow:0 4px 0 #071233;overflow:hidden}
+#boot .boot-bar i{display:block;height:100%;width:calc(var(--boot,0)*100%);border-radius:8px;background:linear-gradient(180deg,#ffe27a,#ffb020);box-shadow:inset 0 3px 0 rgba(255,255,255,.45);transition:width .35s ease-out;
+  background-image:repeating-linear-gradient(135deg,transparent 0 8px,rgba(255,255,255,.22) 8px 16px),linear-gradient(180deg,#ffe27a,#ffb020)}
+#boot .boot-txt{font-family:var(--display);font-size:20px;color:#fff;-webkit-text-stroke:5px #071233;paint-order:stroke fill;letter-spacing:.5px}

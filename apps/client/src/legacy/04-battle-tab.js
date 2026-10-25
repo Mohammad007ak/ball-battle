@@ -46,7 +46,7 @@ function paintHero(t){
   const cvA=$('#arenaCv'),w=cvA.clientWidth||340,h=cvA.clientHeight||w*0.8,d=Math.min(window.devicePixelRatio||1,2),pw=Math.round(w*d),ph=Math.round(h*d);
   if(cvA.width!==pw||cvA.height!==ph){cvA.width=pw;cvA.height=ph}
   const c=cvA.getContext('2d'),li=leagueOf(S.trophies);
-  c.setTransform(1,0,0,1,0,0);c.drawImage(arenaCanvas(li,pw),0,(ph-pw)/2);
+  c.setTransform(1,0,0,1,0,0);{const a=arenaCanvas(li,pw);c.drawImage(a,0,(ph-a.height)/2)}
   c.setTransform(d,0,0,d,0,0);
   const g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,'rgba(0,0,0,.4)');g.addColorStop(0.22,'rgba(0,0,0,0)');g.addColorStop(0.68,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.6)');
   c.fillStyle=g;c.fillRect(0,0,w,h);
@@ -60,7 +60,7 @@ function paintHero(t){
   });
 }
 const AICON={};
-function arenaIcon(li){if(AICON[li]==null){try{AICON[li]=arenaCanvas(li,144).toDataURL('image/png')}catch(e){AICON[li]=''}}return AICON[li]}
+function arenaIcon(li){if(AICON[li]==null){try{const a=arenaCanvas(li,144),q=document.createElement('canvas');q.width=q.height=144;q.getContext('2d').drawImage(a,0,(144-a.height)/2);AICON[li]=q.toDataURL('image/png')}catch(e){AICON[li]=''}}return AICON[li]}
 $('#battle').addEventListener('click',e=>{
   const tm=e.target.closest('[data-team]');if(tm){openTeamSheet(+tm.dataset.team);return}
   const sl=e.target.closest('.slot');if(sl){if(!sl.disabled)slotTap(+sl.dataset.slot);return}

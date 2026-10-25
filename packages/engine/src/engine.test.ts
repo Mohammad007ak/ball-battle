@@ -206,7 +206,7 @@ describe('maps', () => {
 });
 
 describe('2v2', () => {
-  it('runs four fighters on the 480 arena and removes fallen ones', () => {
+  it('runs four fighters on the portrait 2v2 arena and removes fallen ones', () => {
     const s = createRound({
       seed: 3,
       mode: '2v2',
@@ -220,7 +220,7 @@ describe('2v2', () => {
         bot: true,
       })),
     });
-    expect(s.W).toBe(480);
+    expect([s.W, s.H]).toEqual([400, 600]);
     run(s, 70 * 60);
     expect(s.result).not.toBeNull();
     const dead = s.f.filter((f) => f.hp <= 0);

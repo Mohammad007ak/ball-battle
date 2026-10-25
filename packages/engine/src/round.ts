@@ -18,20 +18,22 @@ export function createRound(cfg: RoundConfig): RoundState {
   const B = cfg.balance,
     R = B.engine.rules,
     W = cfg.mode === '2v2' ? R.world2v2 : R.world1v1,
+    // Portrait arena (phone screens): height = width × aspect.
+    H = Math.round(W * R.aspect),
     rng = createRng(cfg.seed);
   const f = cfg.fighters.map((sp, id) => {
     const spec = { ...sp, skill: sp.skill ?? cfg.botSkill ?? 0 };
     if (cfg.mode === '2v2') {
       const p = R.spawn2v2[id]!;
-      return makeFighter(B, rng, id, spec, W * p[0]!, () => W * p[1]!);
+      return makeFighter(B, rng, id, spec, W * p[0]!, () => H * p[1]!);
     }
     const S = R.spawn1v1;
-    return makeFighter(B, rng, id, spec, W * S.x[spec.team]!, (j) => W * (S.y + j * S.yJitter));
+    return makeFighter(B, rng, id, spec, W * S.x[spec.team]!, (j) => H * (S.y + j * S.yJitter));
   });
   return {
     mode: cfg.mode,
     W,
-    H: W,
+    H,
     tick: 0,
     phase: 'count',
     count: R.countdown,
@@ -39,7 +41,7 @@ export function createRound(cfg: RoundConfig): RoundState {
     ins: 0,
     shrinkWarned: false,
     rng,
-    map: buildMap(cfg.map, W, W, B.engine.maps),
+    map: buildMap(cfg.map, W, H, B.engine.maps),
     f,
     arrows: [],
     zones: [],

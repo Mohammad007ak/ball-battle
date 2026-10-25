@@ -1,23 +1,26 @@
 // Ported from prototype/ball-battle.html (lines 1409-1595). Shared-scope legacy script (plain JS, as in the prototype): see vite.config.ts.
 /* ---------- MATCH ---------- */
-let W=360,H=360,M=14,VW=W+2*M;
-function setWorld(n){W=H=n;M=14*n/360;VW=W+2*M;if(typeof finConsts==='function')finConsts()}
+// Portrait arena: height = width × engine rules.aspect (2:3). VW×VH is the view incl. the wall margin M.
+const ASPECT=CK.B.engine.rules.aspect;
+let W=360,H=Math.round(360*ASPECT),M=14,VW=W+2*M,VH=H+2*M;
+function setWorld(n){W=n;H=Math.round(n*ASPECT);M=14*n/360;VW=W+2*M;VH=H+2*M;
+  document.documentElement.style.setProperty('--arena-ar',VW+'/'+VH);if(typeof finConsts==='function')finConsts()}
+setWorld(360);
 const cv=$('#cv');let ctx=cv.getContext('2d');
 let G =null,raf=0,last=0,scale=1, bg =null;
 function hexPath(b,x,y,s){b.beginPath();for(let i=0;i<6;i++){const a=Math.PI/3*i,px=x+s*Math.cos(a),py=y+s*Math.sin(a);i?b.lineTo(px,py):b.moveTo(px,py)}b.closePath()}
 const ARENA_CACHE={};
 function arenaCanvas(li,px){
   const key=li+'_'+px;if(ARENA_CACHE[key])return ARENA_CACHE[key];
-  const c=document.createElement('canvas');c.width=c.height=px;const b=c.getContext('2d');
-  // Arena art from the league's image when present, otherwise the prototype's canvas painting.
-  const A=ARENAS[li]||ARENAS[ARENAS.length-1],im=A.art&&artImg(A.art.replace(/\.webp$/,''));
-  if(im){b.drawImage(im,0,0,px,px);return ARENA_CACHE[key]=c}
-  const sw=W;W=H=360;M=14;VW=388;b.setTransform(px/VW,0,0,px/VW,0,0);paintArena(b,A.paint!=null?A.paint:li%5);setWorld(sw);
+  // The prototype's painted arenas (the generated arena photos looked stretched and cheap).
+  const A=ARENAS[li]||ARENAS[ARENAS.length-1],sw=W;setWorld(360);
+  const c=document.createElement('canvas');c.width=px;c.height=Math.round(px*VH/VW);const b=c.getContext('2d');
+  b.setTransform(px/VW,0,0,px/VW,0,0);paintArena(b,A.paint!=null?A.paint:li%5);setWorld(sw);
   return ARENA_CACHE[key]=c;
 }
 function sizeCanvas(){
   const w=cv.clientWidth||340,d=CK.Q.dpr();
-  cv.width=Math.round(w*d);cv.height=Math.round(w*d);scale=cv.width/VW;CK.Q.apply(ctx);
+  cv.width=Math.round(w*d);cv.height=Math.round(w*d*VH/VW);scale=cv.width/VW;CK.Q.apply(ctx);
   bg=arenaCanvas(G?G.li:0,cv.width);
 }
 window.addEventListener('resize',()=>{if(G)sizeCanvas();});
@@ -25,10 +28,10 @@ window.addEventListener('resize',()=>{if(G)sizeCanvas();});
 const MTILE={};
 function mapTile(li,id){
   const key=li+'_'+id;if(MTILE[key]!=null)return MTILE[key];
-  const px=192,c=document.createElement('canvas');c.width=c.height=px;const k=c.getContext('2d');
+  const px=192,c=document.createElement('canvas');c.width=px;c.height=Math.round(px*VH/VW);const k=c.getContext('2d');
   k.drawImage(arenaCanvas(li,px),0,0);
   const sc=px/VW,sCtx=ctx,sG=G;
-  try{ctx=k;G={map:viewMap(id,360),ins:0};ctx.setTransform(sc,0,0,sc,M*sc,M*sc);drawMap(0.4,{x0:0,y0:0,x1:W,y1:H})}
+  try{ctx=k;G={map:viewMap(id,W),ins:0};ctx.setTransform(sc,0,0,sc,M*sc,M*sc);drawMap(0.4,{x0:0,y0:0,x1:W,y1:H})}
   finally{ctx=sCtx;G=sG}
   try{MTILE[key]=c.toDataURL('image/png')}catch(e){MTILE[key]=''}
   return MTILE[key];

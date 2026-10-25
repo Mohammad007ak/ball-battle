@@ -58,7 +58,7 @@ function resetRound() {
 
 /** Engine map plus the prototype's display fields (name, color, portal colors). */
 function viewMap(id, w, live) {
-  const m = live || CK.E.buildMap(id, w, w, CK.B.engine.maps),
+  const m = live || CK.E.buildMap(id, w, Math.round(w * ASPECT), CK.B.engine.maps),
     meta = MAPS.find((x) => x.id === id);
   Object.assign(m, { name: meta.name, color: meta.color, desc: meta.desc });
   m.portals.forEach((p, i) => (p.c = ['#d06bff', '#6ee7f9'][i]));
