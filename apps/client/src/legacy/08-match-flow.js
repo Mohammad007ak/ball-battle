@@ -4,8 +4,9 @@
 const ASPECT=CK.B.engine.rules.aspect;
 let W=360,H=Math.round(360*ASPECT),M=14,VW=W+2*M,VH=H+2*M;
 function setWorld(n){W=n;H=Math.round(n*ASPECT);M=14*n/360;VW=W+2*M;VH=H+2*M;
-  document.documentElement.style.setProperty('--arena-ar',VW+'/'+VH);if(typeof finConsts==='function')finConsts()}
-setWorld(360);
+  document.documentElement.style.setProperty('--arena-ar',VW+'/'+VH);if(FIN_READY)finConsts()}
+// 13-finishers.js (loaded later) declares FAX… with `let`; calling finConsts() before that throws.
+let FIN_READY=false;
 const cv=$('#cv');let ctx=cv.getContext('2d');
 let G =null,raf=0,last=0,scale=1, bg =null;
 function hexPath(b,x,y,s){b.beginPath();for(let i=0;i<6;i++){const a=Math.PI/3*i,px=x+s*Math.cos(a),py=y+s*Math.sin(a);i?b.lineTo(px,py):b.moveTo(px,py)}b.closePath()}

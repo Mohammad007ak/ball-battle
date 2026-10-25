@@ -1,7 +1,7 @@
 // Ported from prototype/ball-battle.html (lines 2062-2420). Shared-scope legacy script (plain JS, as in the prototype): see vite.config.ts.
 /* ---------- FINISHERS ---------- */
 const e01=x=>x<0?0:x>1?1:x,sg=(T,a,b)=>e01((T-a)/(b-a)),eo=x=>1-Math.pow(1-x,3),ei=x=>x*x*x,eio=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2,lerp=(a,b,q)=>a+(b-a)*q;
-let FAX,FVX,FY,VR,VT;function finConsts(){FAX=W*0.34;FVX=W*0.66;FY=H*0.6;VR=W/2+W/2/1.55-4;VT=H*0.55-H*0.55/1.55}finConsts();
+let FAX,FVX,FY,VR,VT;function finConsts(){FAX=W*0.34;FVX=W*0.66;FY=H*0.6;VR=W/2+W/2/1.55-4;VT=H*0.55-H*0.55/1.55}finConsts();FIN_READY=true;
 const FCAM=1.55,FIN_PROMPT=3.6,RAINBOW=['#f43f5e','#fb923c','#facc15','#4ade80','#38bdf8','#a78bfa'];
 function fball(c,P,o){o=o||{};c.save();if(o.a!=null)c.globalAlpha*=o.a;c.translate(o.x,o.y);if(o.rot)c.rotate(o.rot);const s=o.s==null?1:o.s;c.scale((o.sx||1)*s,(o.sy||1)*s);
   drawBall(c,{x:0,y:0,r:P.r,k:P.cls,skin:P.skin,t:G.clock,look:o.look==null?P.look:o.look,mood:o.mood||'idle',glow:o.glow==null?10:o.glow,noFace:!!(o.emo||o.noFace||o.char)});
