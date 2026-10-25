@@ -10,7 +10,7 @@ function auInit(){
     AU.fx=c.createGain();AU.fx.gain.value=AU.fxOn?0.85:0;AU.fx.connect(AU.master);
     const nb=c.createBuffer(1,c.sampleRate,c.sampleRate),d=nb.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;AU.nb=nb;
     setInterval(auSched,30);return true}catch(e){AU.ctx=null;return false}}
-function auWake(){if(!auInit())return;if(AU.ctx.state==='suspended')AU.ctx.resume();musicFor()}
+function auWake(){if(!auInit())return;Object.values(MUSIC_FILES).flat().forEach(musicLoad);if(AU.ctx.state==='suspended')AU.ctx.resume();musicFor()}
 document.addEventListener('pointerdown',auWake,{capture:true});document.addEventListener('keydown',auWake,{capture:true});
 const mtof=m=>440*Math.pow(2,(m-69)/12);
 function tone(f,d,o){o=o||{};const c=AU.ctx,t=o.at||c.currentTime,os=c.createOscillator(),g=c.createGain();os.type=o.type||'sine';os.frequency.setValueAtTime(f,t);if(o.to)os.frequency.exponentialRampToValueAtTime(Math.max(20,o.to),t+(o.slide||d));if(o.det)os.detune.value=o.det;
@@ -133,9 +133,18 @@ const TRACKS={
       if(s%32<16||ph===3){const n=mel[ph][st];if(n!=null)tone(mtof(deg(r+n,62)),sd*1.7,{type:'square',vol:0.05,lp:2600,at:t,out:AU.mus})}
       else if(st%2===0)tone(mtof(deg(r+[0,2,4,2][(st/2)%4],74)),sd*0.9,{type:'triangle',vol:0.04,at:t,out:AU.mus})}}
 };
-function auSched(){if(!AU.ctx||!AU.track)return;const T=TRACKS[AU.track],sd=60/T.bpm/4;const now=AU.ctx.currentTime;if(AU.next<now)AU.next=now+0.05;
+/* recorded tracks (apps/client/public/music); a track without files, or not yet decoded, falls back to its procedural loop */
+const MUSIC_FILES={battle:['music/battle-1.ogg','music/battle-2.ogg','music/battle-3.ogg']};const MUSIC_VOL=0.75;
+AU.buf={};AU.src=null;AU.pick={};
+function musicLoad(url){if(AU.buf[url])return AU.buf[url];
+  AU.buf[url]=fetch(url).then(r=>r.arrayBuffer()).then(b=>new Promise((ok,no)=>AU.ctx.decodeAudioData(b,ok,no))).catch(()=>{AU.buf[url]=null;return null});return AU.buf[url]}
+function musicStopFile(){if(AU.src){const s=AU.src,g=s.g,t=AU.ctx.currentTime;AU.src=null;g.gain.setTargetAtTime(0,t,0.25);try{s.stop(t+1.5)}catch(e){}}}
+function musicPlayFile(name){const list=MUSIC_FILES[name];if(!list)return;const i=AU.pick[name]=((AU.pick[name]??Math.floor(Math.random()*list.length)-1)+1)%list.length;
+  musicLoad(list[i]).then(b=>{if(!b||AU.track!==name||AU.src)return;const c=AU.ctx,s=c.createBufferSource(),g=c.createGain();s.buffer=b;s.loop=true;s.g=g;
+    g.gain.setValueAtTime(0,c.currentTime);g.gain.linearRampToValueAtTime(MUSIC_VOL,c.currentTime+0.8);s.connect(g);g.connect(AU.mus);s.start();AU.src=s})}
+function auSched(){if(!AU.ctx||!AU.track||AU.src)return;const T=TRACKS[AU.track],sd=60/T.bpm/4;const now=AU.ctx.currentTime;if(AU.next<now)AU.next=now+0.05;
   while(AU.next<now+0.14){try{T.step(AU.step%T.len,AU.next,sd)}catch(e){}AU.next+=sd;AU.step++}}
-function musicFor(){if(!AU.ctx)return;const want=($('#match')&&!$('#match').hidden)?'battle':'menu';if(AU.track===want)return;AU.track=want;AU.step=0;AU.next=AU.ctx.currentTime+0.1;
+function musicFor(){if(!AU.ctx)return;const want=($('#match')&&!$('#match').hidden)?'battle':'menu';if(AU.track===want)return;AU.track=want;AU.step=0;AU.next=AU.ctx.currentTime+0.1;musicStopFile();musicPlayFile(want);
   const g=AU.mus.gain,t=AU.ctx.currentTime;g.cancelScheduledValues(t);g.setValueAtTime(0.0001,t);g.linearRampToValueAtTime(AU.musOn?0.3:0,t+0.6)}
 function musicDuck(on){if(!AU.ctx)return;const g=AU.mus.gain,t=AU.ctx.currentTime;g.cancelScheduledValues(t);g.setValueAtTime(g.value,t);g.linearRampToValueAtTime(AU.musOn?(on?0.05:0.3):0,t+0.3)}
 function setSound(kind,on){if(kind==='mus')AU.musOn=on;else AU.fxOn=on;try{localStorage.setItem(kind==='mus'?'bb-music':'bb-sfx',on?'1':'0')}catch(e){}
