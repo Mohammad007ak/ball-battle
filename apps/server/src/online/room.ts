@@ -34,7 +34,7 @@ export const T = {
   finishPrompt: 3600,
   finisher: 6500,
   inputDelayTicks: 6, // ~100 ms, masked by the client's wind-up animation
-  snapEvery: 3, // 60 Hz sim → 20 snapshots/s
+  snapEvery: 2, // 60 Hz sim → 30 snapshots/s (smoother motion; ~50% more bandwidth)
   reconnect: 15_000,
   emoteGap: 2500,
 } as const;

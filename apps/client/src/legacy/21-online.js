@@ -1,7 +1,6 @@
 // Online 1v1 (server-authoritative). The server runs the engine; this client sends inputs,
 // renders interpolated snapshots and plays the same overlays as offline. "Me" is always team 0
 // on screen: server sides are remapped with `G.side`.
-const INTERP_MS = 100;
 let WS = null,
   wsRetry = 0;
 
@@ -57,6 +56,14 @@ function closeOnline() {
 
 function onlineMsg(m) {
   switch (m.t) {
+    case 'noOpponent':
+      // Nobody to play online: continue with a bot match run on the phone (server-verified).
+      closeOnline();
+      cancelAnimationFrame(raf);
+      clearTimeout(G.pickT);
+      G = null;
+      startMatch(true);
+      break;
     case 'start': {
       const first = !G.room;
       G.room = m.room;
@@ -95,6 +102,7 @@ function onlineMsg(m) {
       onlineRound(m);
       break;
     case 'snap':
+      onSnapArrival(m.s.tick);
       G.snaps.push({ s: m.s, at: performance.now() });
       if (G.snaps.length > 30) G.snaps.splice(0, G.snaps.length - 30);
       onEvents(m.ev);
@@ -150,6 +158,7 @@ function onlineRound(m) {
   G.byId = fighters.map(view);
   G.f = [...G.byId].sort((a, b) => a.team - b.team);
   G.snaps = [];
+  NET = { clk: -1, last: 0, lastTick: 0, jit: 2 }; // ticks restart every round
   setupHud();
   renderRosters();
   const [me, foe] = G.f,
@@ -165,24 +174,63 @@ function onlinePick(i) {
   $('#ov').innerHTML = `<div class="rv-top">منتظر حریف…</div>`;
 }
 
-/** Per frame: draw the server state INTERP_MS in the past, interpolating ball positions. */
-function onlineFrame() {
+/*
+ * Playback clock for online matches. Snapshots are placed by their server tick (not by when they
+ * happened to arrive), and drawn a little in the past: a jitter buffer that grows when the network
+ * is bumpy and shrinks when it is calm. The clock advances smoothly with the frame time and is only
+ * nudged toward the target, so late or bunched packets no longer freeze and jump the balls.
+ */
+let NET = { clk: -1, last: 0, lastTick: 0, jit: 2 };
+function onSnapArrival(tick) {
+  const now = performance.now();
+  if (NET.last && tick > NET.lastTick) {
+    // Arrival spacing vs. the spacing the server sent them with, in ticks.
+    const dev = Math.abs((now - NET.last) / (1000 / 60) - (tick - NET.lastTick));
+    NET.jit += (dev - NET.jit) * 0.1;
+  }
+  NET.last = now;
+  NET.lastTick = Math.max(NET.lastTick, tick);
+}
+function netDelay() {
+  return Math.max(5, Math.min(24, 4 + NET.jit * 2.5)); // ticks behind the newest snapshot
+}
+function onlineFrame(dt) {
   if (!G.R || !G.snaps.length) return;
-  const t = performance.now() - INTERP_MS;
+  const newest = G.snaps[G.snaps.length - 1].s.tick,
+    target = newest - netDelay();
+  if (NET.clk < 0 || Math.abs(target - NET.clk) > 45) NET.clk = target;
+  else NET.clk += dt * 60 + (target - NET.clk) * 0.04;
+  const t = NET.clk;
   let i = G.snaps.length - 1;
-  while (i > 0 && G.snaps[i].at > t) i--;
+  while (i > 0 && G.snaps[i].s.tick > t) i--;
   const a = G.snaps[i],
     b = G.snaps[i + 1];
   CK.P.applySnapshot(G.R, a.s);
   if (b) {
-    const k = Math.max(0, Math.min(1, (t - a.at) / (b.at - a.at || 1)));
+    const k = Math.max(0, Math.min(1, (t - a.s.tick) / (b.s.tick - a.s.tick || 1)));
     b.s.f.forEach((row, id) => {
       const f = G.R.f[id];
-      if (f) {
+      if (f && Math.abs(row[0] - f.x) + Math.abs(row[1] - f.y) < 60) {
         f.x += (row[0] - f.x) * k;
         f.y += (row[1] - f.y) * k;
       }
     });
+    // Projectiles: same index and owner in both snapshots → glide between them.
+    const A = G.R.arrows;
+    b.s.a.forEach((row, j) => {
+      const p = A[j];
+      if (p && p.owner === row[5] && Math.abs(row[0] - p.x) + Math.abs(row[1] - p.y) < 60) {
+        p.x += (row[0] - p.x) * k;
+        p.y += (row[1] - p.y) * k;
+      }
+    });
+  } else {
+    // Ran past the newest snapshot (late packet): keep moving along the last velocity briefly.
+    const ahead = Math.min(6, t - a.s.tick) / 60;
+    for (const f of G.R.f) {
+      f.x += f.vx * ahead;
+      f.y += f.vy * ahead;
+    }
   }
   if (G.phase === 'vs' && G.R.phase === 'count') {
     $('#ov').hidden = true;

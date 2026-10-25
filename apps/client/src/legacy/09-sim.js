@@ -127,12 +127,13 @@ function openMatchScreen(li) {
   raf = requestAnimationFrame(loop);
 }
 
-async function startMatch() {
+/** `local`: skip online matchmaking (no human opponent found → bot match on the phone). */
+async function startMatch(local) {
   if (S.mode === '2v2') {
     startMatch2();
     return;
   }
-  if (CK.BK.onlineUrl && CK.BK.onlineUrl()) {
+  if (!local && CK.BK.onlineUrl && CK.BK.onlineUrl()) {
     startOnline();
     return;
   }
@@ -435,7 +436,7 @@ function update(dt) {
     return;
   }
   if (G.online) {
-    onlineFrame();
+    onlineFrame(dt);
     return;
   }
   if ((G.phase !== 'count' && G.phase !== 'fight') || !G.R || G.R.result) return;

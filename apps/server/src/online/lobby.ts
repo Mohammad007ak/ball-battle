@@ -40,7 +40,11 @@ export class Lobby {
   playerRoom = new Map<string, Room>();
   queue: Waiting[] = [];
 
-  constructor(private c: Ctx) {}
+  constructor(
+    private c: Ctx,
+    /** onlineBots: fill an empty seat with a server-side bot (tests only; players get `noOpponent`). */
+    private opts: { onlineBots?: boolean } = {},
+  ) {}
 
   join(playerId: string, send: (m: object) => void) {
     if (this.playerRoom.has(playerId) || this.queue.some((q) => q.playerId === playerId)) return;
@@ -68,7 +72,10 @@ export class Lobby {
         this.create(a, b);
       } else if (now - a.since >= MM.botAfter) {
         used.add(a);
-        this.create(a, null);
+        // No human found: the phone plays the bot match itself (smooth, no network in the loop)
+        // and the server verifies it by replay, like any bot match.
+        if (this.opts.onlineBots) this.create(a, null);
+        else a.send({ t: 'noOpponent' });
       }
     }
     this.queue = this.queue.filter((q) => !used.has(q));

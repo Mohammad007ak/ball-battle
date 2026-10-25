@@ -14,7 +14,7 @@ function world() {
     secret: 'x'.repeat(32),
     now: () => t,
   });
-  const lobby = new Lobby(ctx);
+  const lobby = new Lobby(ctx, { onlineBots: true });
   const guest = async () => {
     const r = await app.inject({ method: 'POST', url: '/v1/auth/guest' });
     return r.json().playerId ?? (r.json() as { profile: unknown; token: string }).token;
@@ -71,7 +71,20 @@ describe('online 1v1', () => {
     expect(A.msgs.some((m) => m.t === 'snap')).toBe(true);
   });
 
-  it('fills with a bot after waiting, and the bot plays', async () => {
+  it('without an opponent the player is told to play the bot match locally', async () => {
+    const w = world();
+    const lobby = new Lobby(w.ctx);
+    const [a] = await playerIds(w, 1);
+    const A = w.inbox();
+    lobby.join(a!, A.send);
+    w.advance(MM.botAfter);
+    lobby.matchmake();
+    expect(lobby.rooms.size).toBe(0);
+    expect(lobby.queue).toHaveLength(0);
+    expect(A.msgs.map((m) => m.t)).toEqual(['queued', 'noOpponent']);
+  });
+
+  it('fills with a server bot when enabled, and the bot plays', async () => {
     const w = world();
     const [a] = await playerIds(w, 1);
     const A = w.inbox();
