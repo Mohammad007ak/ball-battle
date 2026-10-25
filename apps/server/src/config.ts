@@ -1,14 +1,7 @@
-import { defaultBalance, type Balance } from '@chakachak/content';
-import type { DB } from './db';
+import { defaultBalance, mergeBalance, type Balance } from '@chakachak/content';
 
-/** Deep-merge a partial override onto the defaults (arrays are replaced, objects merged). */
-export function mergeBalance(base: unknown, over: unknown): unknown {
-  if (over === undefined) return base;
-  if (Array.isArray(over) || typeof over !== 'object' || over === null) return over;
-  const out: Record<string, unknown> = { ...(base as Record<string, unknown>) };
-  for (const [k, v] of Object.entries(over)) out[k] = mergeBalance(out[k], v);
-  return out;
-}
+export { mergeBalance };
+import type { DB } from './db';
 
 /** Remote config: the active row overrides packages/content without an app update. */
 export class RemoteConfig {

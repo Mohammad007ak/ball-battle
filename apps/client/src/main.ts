@@ -3,7 +3,7 @@ import '@fontsource/vazirmatn/400.css';
 import '@fontsource/vazirmatn/600.css';
 import '@fontsource/vazirmatn/800.css';
 import './styles/game.css';
-import { defaultBalance } from '@chakachak/content';
+import { defaultBalance, mergeBalance, type Balance } from '@chakachak/content';
 import { loadArt } from './art';
 import { bootDone, bootProgress } from './boot';
 import { makeBridge } from './bridge';
@@ -27,10 +27,17 @@ if (api) {
   http = new HttpBackend(api);
   for (;;) {
     try {
-      balance = await http.init();
+      // Keys an older server does not send yet fall back to the app's own defaults.
+      balance = mergeBalance(defaultBalance, await http.init()) as Balance;
       break;
-    } catch {
-      bootProgress(0.2, 'در حال اتصال به سرور…');
+    } catch (e) {
+      const code = (e as Error).message;
+      bootProgress(
+        0.2,
+        code === 'network' || code.includes('fetch')
+          ? 'در حال اتصال به سرور…'
+          : `خطای سرور (${code})، تلاش دوباره…`,
+      );
       await new Promise((r) => setTimeout(r, 3000));
     }
   }
@@ -48,5 +55,16 @@ native.onActive((active) => {
 telemetry.track('session_start', { app: __APP_VERSION__ });
 // The prototype-ported UI, concatenated into one module by vite.config.ts.
 bootProgress(0.85, 'آماده‌سازی میدان…');
-await import('virtual:legacy');
-await bootDone();
+try {
+  await import('virtual:legacy');
+  await bootDone();
+} catch (e) {
+  // Never leave the player on an endless loading bar: say so and report it.
+  bootProgress(1, 'خطا در اجرای بازی؛ لطفاً برنامه را دوباره باز کن');
+  telemetry.report({
+    kind: 'error',
+    message: String((e as Error)?.message ?? e).slice(0, 500),
+    source: 'startup',
+  });
+  void telemetry.flush();
+}

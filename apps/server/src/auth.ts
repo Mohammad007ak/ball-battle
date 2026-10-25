@@ -51,7 +51,7 @@ function newSession(c: Ctx, playerId: string, now: number) {
 
 /** First launch: a guest account with no phone (Clash Royale style; linking is optional). */
 export function createGuest(c: Ctx, ip: string) {
-  if (!c.limit.take('guest-ip:' + ip, 20, 3600_000)) throw new AuthError('rateLimited');
+  if (!c.limit.take('guest-ip:' + ip, 300, 3600_000)) throw new AuthError('rateLimited');
   const now = c.now(),
     id = randomBytes(12).toString('base64url');
   return tx(c.db, () => {
