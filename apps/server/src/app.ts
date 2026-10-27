@@ -157,7 +157,7 @@ export function buildApp(o: AppOptions) {
       b.store,
       b.product,
       b.token,
-      b.json && b.sig ? { json: b.json, sig: b.sig } : undefined,
+      b.json || b.sig ? { json: b.json ?? '', sig: b.sig ?? '' } : undefined,
     );
     return { ok: true, ...r, profile: loadProfile(c, id) };
   });

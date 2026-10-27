@@ -70,7 +70,14 @@ export class BazaarVerifier implements StoreVerifier {
 
   /** Signed purchase JSON for exactly this package, product and token, not refunded. */
   signatureOk(product: string, token: string, s: Signed): boolean {
-    if (!this.key || s.json.length > 4000 || s.sig.length > 1000) return false;
+    if (!this.key || s.json.length > 4000 || s.sig.length > 1000) {
+      console.warn('bazaar signed data unusable', {
+        key: !!this.key,
+        json: s.json.length,
+        sig: s.sig.length,
+      });
+      return false;
+    }
     try {
       const v = createVerify('RSA-SHA1');
       v.update(s.json, 'utf8');
