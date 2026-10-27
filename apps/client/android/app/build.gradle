@@ -8,8 +8,8 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // versionName follows apps/client/package.json. versionCode must grow with every store
-        // upload: CI passes -PversionCode (run number + 4); local builds use the last manual one.
-        versionCode Integer.parseInt((findProperty('versionCode') ?: '4').toString())
+        // upload: CI passes -PversionCode (run number + 5); local builds use the last manual one.
+        versionCode Integer.parseInt((findProperty('versionCode') ?: '5').toString())
         versionName new groovy.json.JsonSlurper().parse(file('../../package.json')).version
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
