@@ -32,7 +32,7 @@ Outputs (one per store, each with its own billing library):
 - `apps/client/android/app/build/outputs/apk/{bazaar,myket}/release/*.apk`
 
 ## Build on GitHub (preferred)
-`.github/workflows/android.yml` builds the Bazaar APK + AAB on every push to `main` touching the app
+`.github/workflows/android.yml` builds the Bazaar APK (Bazaar takes the APK; no AAB) on every push to `main` touching the app
 (or by hand: Actions → Android → Run workflow, on any branch) and publishes them in Releases.
 - Secrets (Settings → Secrets and variables → Actions): `ANDROID_KEYSTORE_BASE64` (`base64 -w0
   chakachak-release.jks`), `ANDROID_KEYSTORE_PASSWORD` (key password is the same; alias `chakachak`).

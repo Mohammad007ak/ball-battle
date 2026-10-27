@@ -1,6 +1,6 @@
 # Android builds for Cafe Bazaar on GitHub's servers (docs/RELEASE.md).
 # - With the signing Secrets (ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, optional
-#   ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD): a signed release APK + AAB, published in Releases.
+#   ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD): a signed release APK, published in Releases.
 # - Without them: a debug APK only, for trying on a phone.
 # versionCode = run number + 5 (5 was the last hand-built upload), so every run can go to Bazaar.
 # The server URL comes from the repository variable VITE_API_URL (default: the production server).
@@ -59,9 +59,8 @@ jobs:
         run: |
           mkdir -p "$GITHUB_WORKSPACE/out"
           if [ -n "$KEYSTORE_FILE" ]; then
-            ./gradlew --no-daemon assembleBazaarRelease bundleBazaarRelease -PversionCode=$VERSION_CODE
+            ./gradlew --no-daemon assembleBazaarRelease -PversionCode=$VERSION_CODE
             cp app/build/outputs/apk/bazaar/release/app-bazaar-release.apk "$GITHUB_WORKSPACE/out/chakachak-bazaar.apk"
-            cp app/build/outputs/bundle/bazaarRelease/app-bazaar-release.aab "$GITHUB_WORKSPACE/out/chakachak-bazaar.aab"
             echo "KIND=release" >> "$GITHUB_ENV"
           else
             ./gradlew --no-daemon assembleBazaarDebug -PversionCode=$VERSION_CODE
