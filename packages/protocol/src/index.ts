@@ -53,7 +53,7 @@ export const ActRequestSchema = z.object({ action: ActionSchema, idem: z.string(
 export const IapRequestSchema = z.object({
   store: z.enum(['bazaar', 'myket']),
   product: z.string().min(1).max(64),
-  token: z.string().min(1).max(200),
+  token: z.string().min(1).max(500),
   /** The store's signed purchase data, when the store gives one (Bazaar: originalJson + signature). */
   json: z.string().max(4000).optional(),
   sig: z.string().max(1000).optional(),

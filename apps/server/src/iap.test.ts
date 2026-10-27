@@ -81,7 +81,7 @@ describe('in-app purchases', () => {
     expect(await v.verify('gems_80', 'good')).toBe(true);
     expect(await v.verify('gems_80', 'refunded')).toBe(false);
     expect(await v.verify('gems_80', 'missing')).toBe(false);
-    expect(await v.verify('gems_80', '../x')).toBe(false);
+
     expect(urls.filter((u) => u.includes('/auth/token/'))).toHaveLength(1);
     expect(urls[1]).toBe(
       'https://pardakht.cafebazaar.ir/devapi/v2/api/validate/ir.chakachak.game/inapp/gems_80/purchases/good/?access_token=AT',
@@ -103,6 +103,14 @@ describe('in-app purchases', () => {
       purchaseState: 0,
     });
     expect(await v.verify('gems_80', 'tok1', good)).toBe(true);
+    // Real Bazaar tokens can hold characters like + / = : they must pass too.
+    const odd = 'a+b/c=d:1';
+    const oddSigned = sign({
+      packageName: 'ir.chakachak.game',
+      productId: 'gems_80',
+      purchaseToken: odd,
+    });
+    expect(await v.verify('gems_80', odd, oddSigned)).toBe(true);
     // Signature for another product or token, or a tampered JSON, is refused.
     expect(await v.verify('gems_1200', 'tok1', good)).toBe(false);
     expect(await v.verify('gems_80', 'tok2', good)).toBe(false);

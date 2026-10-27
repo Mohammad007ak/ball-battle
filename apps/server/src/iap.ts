@@ -23,7 +23,7 @@ export interface StoreVerifier {
 }
 
 const ROOT = 'https://pardakht.cafebazaar.ir/devapi/v2';
-const SAFE = /^[A-Za-z0-9._-]{1,200}$/;
+const SAFE = /^[A-Za-z0-9._-]{1,64}$/;
 type Fetch = typeof fetch;
 
 type Auth = { secret: string } | { clientId: string; clientSecret: string; refresh: string };
@@ -56,10 +56,15 @@ export class BazaarVerifier implements StoreVerifier {
   }
 
   async verify(product: string, token: string, signed?: Signed): Promise<boolean> {
-    if (!SAFE.test(product) || !SAFE.test(token)) return false;
+    // The signed data is compared as-is, so any token characters are fine there; only the API
+    // path puts the token into a URL (encoded below).
     if (signed && this.signatureOk(product, token, signed)) return true;
     if (!signed) console.warn('bazaar: no signed purchase data from the phone (old app version?)');
     if (!this.auth) return false;
+    if (!SAFE.test(product) || token.length > 500) {
+      console.warn('bazaar: product/token not usable for the API', product, token.length);
+      return false;
+    }
     try {
       return await this.api(product, token);
     } catch (e) {
@@ -133,7 +138,7 @@ export class BazaarVerifier implements StoreVerifier {
 
   private async request(product: string, token: string): Promise<Response> {
     const auth = this.auth!;
-    let url = `${ROOT}/api/validate/${this.pkg}/inapp/${product}/purchases/${token}/`;
+    let url = `${ROOT}/api/validate/${this.pkg}/inapp/${product}/purchases/${encodeURIComponent(token)}/`;
     const headers: Record<string, string> = { accept: 'application/json' };
     if ('secret' in auth) {
       headers['CAFEBAZAAR-PISHKHAN-API-SECRET'] = auth.secret;
