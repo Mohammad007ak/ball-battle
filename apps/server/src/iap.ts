@@ -58,6 +58,7 @@ export class BazaarVerifier implements StoreVerifier {
   async verify(product: string, token: string, signed?: Signed): Promise<boolean> {
     if (!SAFE.test(product) || !SAFE.test(token)) return false;
     if (signed && this.signatureOk(product, token, signed)) return true;
+    if (!signed) console.warn('bazaar: no signed purchase data from the phone (old app version?)');
     if (!this.auth) return false;
     try {
       return await this.api(product, token);
@@ -78,13 +79,23 @@ export class BazaarVerifier implements StoreVerifier {
         return false;
       }
       const j = JSON.parse(s.json) as Record<string, unknown>;
-      return (
+      const ok =
         j.packageName === this.pkg &&
         j.productId === product &&
         j.purchaseToken === token &&
-        (j.purchaseState === undefined || j.purchaseState === 0)
-      );
-    } catch {
+        (j.purchaseState === undefined || j.purchaseState === 0);
+      // Signed by Bazaar but for something else: log the fields (no secrets in them) to see why.
+      if (!ok)
+        console.warn('bazaar signed data mismatch', {
+          packageName: j.packageName,
+          productId: j.productId,
+          tokenMatches: j.purchaseToken === token,
+          purchaseState: j.purchaseState,
+          expected: { pkg: this.pkg, product },
+        });
+      return ok;
+    } catch (e) {
+      console.warn('bazaar signature check failed', e);
       return false;
     }
   }
