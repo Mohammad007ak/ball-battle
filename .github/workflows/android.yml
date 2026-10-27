@@ -2,7 +2,7 @@
 # - With the signing Secrets (ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, optional
 #   ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD): a signed release APK + AAB, published in Releases.
 # - Without them: a debug APK only, for trying on a phone.
-# versionCode = run number + 3 (3 was the last hand-built upload), so every run can go to Bazaar.
+# versionCode = run number + 4 (4 was the last hand-built upload), so every run can go to Bazaar.
 # The server URL comes from the repository variable VITE_API_URL (default: the production server).
 name: Android
 
@@ -47,7 +47,7 @@ jobs:
             echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/chakachak.jks"
             echo "KEYSTORE_FILE=$RUNNER_TEMP/chakachak.jks" >> "$GITHUB_ENV"
           fi
-          echo "VERSION_CODE=$((GITHUB_RUN_NUMBER + 3))" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=$((GITHUB_RUN_NUMBER + 4))" >> "$GITHUB_ENV"
           echo "VERSION_NAME=$(node -p "require('./apps/client/package.json').version")" >> "$GITHUB_ENV"
 
       - name: Build

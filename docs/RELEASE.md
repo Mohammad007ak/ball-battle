@@ -38,7 +38,7 @@ Outputs (one per store, each with its own billing library):
   chakachak-release.jks`), `ANDROID_KEYSTORE_PASSWORD` (key password is the same; alias `chakachak`).
   Without them the run makes a debug APK only.
 - Variable `VITE_API_URL` overrides the server (default `https://chakachak.darkube.ir`).
-- `versionCode` = run number + 3, so every run is a valid Bazaar upload.
+- `versionCode` = run number + 4, so every run is a valid Bazaar upload.
 
 Before every local upload bump `versionCode` in `apps/client/android/app/build.gradle` and `version` in
 `apps/client/package.json` (it becomes `versionName` and is sent with error reports).
