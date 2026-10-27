@@ -77,11 +77,13 @@ export class HttpBackend implements Backend, AccountApi {
     return this.storeList;
   }
   /** Send a store purchase to the server; resolves with the gems granted (0 if already counted). */
-  async iap(store: string, product: string, token: string): Promise<number> {
+  async iap(
+    store: string,
+    p: { product: string; token: string; json?: string; sig?: string },
+  ): Promise<number> {
     const r = await this.req<{ granted: number; profile: Profile }>('POST', '/v1/iap', {
       store,
-      product,
-      token,
+      ...p,
     });
     this.S = r.profile;
     return r.granted;

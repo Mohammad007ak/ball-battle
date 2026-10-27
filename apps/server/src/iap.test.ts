@@ -1,3 +1,4 @@
+import { generateKeyPairSync, createSign } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { buildApp } from './app';
 import { openDb } from './db';
@@ -85,5 +86,29 @@ describe('in-app purchases', () => {
     expect(urls[1]).toBe(
       'https://pardakht.cafebazaar.ir/devapi/v2/api/validate/ir.chakachak.game/inapp/gems_80/purchases/good/?access_token=AT',
     );
+  });
+
+  it('accepts a purchase signed by Bazaar (RSA key) without the API', async () => {
+    const { publicKey, privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
+    const rsa = publicKey.export({ type: 'spki', format: 'der' }).toString('base64');
+    const v = new BazaarVerifier('ir.chakachak.game', null, fetch, Date.now, rsa);
+    const sign = (o: object) => {
+      const json = JSON.stringify(o);
+      return { json, sig: createSign('RSA-SHA1').update(json).sign(privateKey, 'base64') };
+    };
+    const good = sign({
+      packageName: 'ir.chakachak.game',
+      productId: 'gems_80',
+      purchaseToken: 'tok1',
+      purchaseState: 0,
+    });
+    expect(await v.verify('gems_80', 'tok1', good)).toBe(true);
+    // Signature for another product or token, or a tampered JSON, is refused.
+    expect(await v.verify('gems_1200', 'tok1', good)).toBe(false);
+    expect(await v.verify('gems_80', 'tok2', good)).toBe(false);
+    expect(
+      await v.verify('gems_80', 'tok1', { json: good.json.replace('80', '1200'), sig: good.sig }),
+    ).toBe(false);
+    expect(await v.verify('gems_80', 'tok1')).toBe(false);
   });
 });

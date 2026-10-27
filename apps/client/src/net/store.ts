@@ -4,6 +4,9 @@ import type { HttpBackend } from './http-backend';
 interface Purchase {
   product: string;
   token: string;
+  /** Store-signed purchase data (Bazaar), checked by the server. */
+  json?: string;
+  sig?: string;
 }
 /** Native billing plugin (android: StorePlugin.java, one per store flavour). */
 interface StorePlugin {
@@ -69,7 +72,7 @@ export class GemStore {
 
   private async redeem(p: Purchase): Promise<BuyResult> {
     try {
-      const granted = await this.http!.iap(this.store, p.product, p.token);
+      const granted = await this.http!.iap(this.store, p);
       await Native.consume({ token: p.token }).catch(() => {});
       return { ok: true, granted };
     } catch (e) {

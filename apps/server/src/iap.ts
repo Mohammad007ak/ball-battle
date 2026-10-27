@@ -1,3 +1,4 @@
+import { createPublicKey, createVerify } from 'node:crypto';
 import type { Ctx } from './app';
 import { AuthError } from './auth';
 import { tx } from './db';
@@ -10,51 +11,122 @@ import { assertNonNegative, writeLedger } from './ledger';
  * phone consume the purchase. A purchase the phone could not report (no internet, app killed)
  * is re-sent on the next launch.
  */
+/** What the store app handed the phone: the purchase JSON and the store's signature of it. */
+export interface Signed {
+  json: string;
+  sig: string;
+}
+
 export interface StoreVerifier {
   /** True when the store confirms an unrefunded purchase of `product` with this token. */
-  verify(product: string, token: string): Promise<boolean>;
+  verify(product: string, token: string, signed?: Signed): Promise<boolean>;
 }
 
 const ROOT = 'https://pardakht.cafebazaar.ir/devapi/v2';
 const SAFE = /^[A-Za-z0-9._-]{1,200}$/;
 type Fetch = typeof fetch;
 
+type Auth = { secret: string } | { clientId: string; clientSecret: string; refresh: string };
+
 /**
- * Cafe Bazaar developer API (devapi v2). Either the Pishkhan API secret, or a Developer API
- * client with a refresh token (short-lived access tokens are fetched and cached).
+ * Cafe Bazaar purchase check, two independent ways (either one is enough):
+ * 1. The purchase JSON signed by Bazaar (SHA1withRSA), checked with the app's public RSA key from
+ *    Pishkhan — offline, the same check Poolakey does on the phone, but here the phone cannot fake it.
+ * 2. Bazaar's developer API (devapi v2) with the Pishkhan API secret or a Developer API client.
  */
 export class BazaarVerifier implements StoreVerifier {
   private access = '';
   private expires = 0;
+  private key: ReturnType<typeof createPublicKey> | null;
 
   constructor(
     private pkg: string,
-    private auth: { secret: string } | { clientId: string; clientSecret: string; refresh: string },
+    private auth: Auth | null,
     private http: Fetch = fetch,
     private now: () => number = Date.now,
-  ) {}
+    rsaKey = '',
+  ) {
+    this.key = rsaKey
+      ? createPublicKey({
+          key: Buffer.from(rsaKey.replace(/\s+/g, ''), 'base64'),
+          format: 'der',
+          type: 'spki',
+        })
+      : null;
+  }
 
-  async verify(product: string, token: string): Promise<boolean> {
+  async verify(product: string, token: string, signed?: Signed): Promise<boolean> {
     if (!SAFE.test(product) || !SAFE.test(token)) return false;
-    let url = `${ROOT}/api/validate/${this.pkg}/inapp/${product}/purchases/${token}/`;
-    const headers: Record<string, string> = { accept: 'application/json' };
-    if ('secret' in this.auth) {
-      headers['CAFEBAZAAR-PISHKHAN-API-SECRET'] = this.auth.secret;
-      headers.authorization = 'Bearer ' + this.auth.secret;
-    } else url += '?access_token=' + encodeURIComponent(await this.accessToken());
-    const r = await this.http(url, { headers, signal: AbortSignal.timeout(20_000) });
+    if (signed && this.signatureOk(product, token, signed)) return true;
+    if (!this.auth) return false;
+    try {
+      return await this.api(product, token);
+    } catch (e) {
+      console.warn('bazaar api', e);
+      return false;
+    }
+  }
+
+  /** Signed purchase JSON for exactly this package, product and token, not refunded. */
+  signatureOk(product: string, token: string, s: Signed): boolean {
+    if (!this.key || s.json.length > 4000 || s.sig.length > 1000) return false;
+    try {
+      const v = createVerify('RSA-SHA1');
+      v.update(s.json, 'utf8');
+      if (!v.verify(this.key, s.sig, 'base64')) {
+        console.warn('bazaar signature mismatch');
+        return false;
+      }
+      const j = JSON.parse(s.json) as Record<string, unknown>;
+      return (
+        j.packageName === this.pkg &&
+        j.productId === product &&
+        j.purchaseToken === token &&
+        (j.purchaseState === undefined || j.purchaseState === 0)
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  /** Is the API key accepted? A made-up token answers 404 when it is, 401/403 when it is not. */
+  async probe(): Promise<{ rsa: boolean; api: number | 'off' | 'error' }> {
+    const rsa = !!this.key;
+    if (!this.auth) return { rsa, api: 'off' };
+    try {
+      const r = await this.request('gems_80', 'key-check');
+      return { rsa, api: r.status };
+    } catch {
+      return { rsa, api: 'error' };
+    }
+  }
+
+  private async api(product: string, token: string): Promise<boolean> {
+    const r = await this.request(product, token);
     if (r.status !== 200) {
-      if (r.status !== 404)
-        console.warn('bazaar validate', r.status, await r.text().catch(() => ''));
+      console.warn('bazaar validate', r.status, (await r.text().catch(() => '')).slice(0, 300));
       return false;
     }
     const j = (await r.json().catch(() => ({}))) as { purchaseState?: number };
+    if (j.purchaseState !== 0)
+      console.warn('bazaar validate state', JSON.stringify(j).slice(0, 300));
     return j.purchaseState === 0; // 0 purchased, 1 refunded
+  }
+
+  private async request(product: string, token: string): Promise<Response> {
+    const auth = this.auth!;
+    let url = `${ROOT}/api/validate/${this.pkg}/inapp/${product}/purchases/${token}/`;
+    const headers: Record<string, string> = { accept: 'application/json' };
+    if ('secret' in auth) {
+      headers['CAFEBAZAAR-PISHKHAN-API-SECRET'] = auth.secret;
+      headers.authorization = 'Bearer ' + auth.secret;
+    } else url += '?access_token=' + encodeURIComponent(await this.accessToken());
+    return this.http(url, { headers, signal: AbortSignal.timeout(20_000) });
   }
 
   private async accessToken(): Promise<string> {
     if (this.access && this.now() < this.expires) return this.access;
-    if ('secret' in this.auth) return '';
+    if (!this.auth || 'secret' in this.auth) return '';
     const r = await this.http(`${ROOT}/auth/token/`, {
       method: 'POST',
       headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
@@ -76,15 +148,18 @@ export class BazaarVerifier implements StoreVerifier {
 
 /** Bazaar verifier from the environment, or none (the shop then shows "soon"). */
 export function bazaarFromEnv(env: NodeJS.ProcessEnv): BazaarVerifier | undefined {
-  const pkg = env.BAZAAR_PACKAGE ?? 'ir.chakachak.game';
-  if (env.BAZAAR_API_SECRET) return new BazaarVerifier(pkg, { secret: env.BAZAAR_API_SECRET });
-  if (env.BAZAAR_CLIENT_ID && env.BAZAAR_CLIENT_SECRET && env.BAZAAR_REFRESH_TOKEN)
-    return new BazaarVerifier(pkg, {
-      clientId: env.BAZAAR_CLIENT_ID,
-      clientSecret: env.BAZAAR_CLIENT_SECRET,
-      refresh: env.BAZAAR_REFRESH_TOKEN,
-    });
-  return undefined;
+  const pkg = env.BAZAAR_PACKAGE ?? 'ir.chakachak.game',
+    rsa = env.BAZAAR_RSA_KEY ?? '';
+  const auth: Auth | null = env.BAZAAR_API_SECRET
+    ? { secret: env.BAZAAR_API_SECRET }
+    : env.BAZAAR_CLIENT_ID && env.BAZAAR_CLIENT_SECRET && env.BAZAAR_REFRESH_TOKEN
+      ? {
+          clientId: env.BAZAAR_CLIENT_ID,
+          clientSecret: env.BAZAAR_CLIENT_SECRET,
+          refresh: env.BAZAAR_REFRESH_TOKEN,
+        }
+      : null;
+  return auth || rsa ? new BazaarVerifier(pkg, auth, fetch, Date.now, rsa) : undefined;
 }
 
 /**
@@ -97,6 +172,7 @@ export async function redeem(
   store: string,
   product: string,
   token: string,
+  signed?: Signed,
 ): Promise<{ granted: number }> {
   const v = c.stores[store];
   if (!v) throw new AuthError('storeOff');
@@ -110,7 +186,10 @@ export async function redeem(
     if (done.player_id !== playerId) throw new AuthError('notYours');
     return { granted: 0 };
   }
-  if (!(await v.verify(product, token))) throw new AuthError('notVerified');
+  if (!(await v.verify(product, token, signed))) {
+    console.warn('iap not verified', store, product, playerId);
+    throw new AuthError('notVerified');
+  }
   return tx(c.db, () => {
     // Re-checked inside the transaction: two requests with one token may have raced the await.
     const again = seen();

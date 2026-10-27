@@ -21,7 +21,7 @@ import {
 import { RemoteConfig } from './config';
 import { privacyRoutes } from './privacy';
 import type { DB } from './db';
-import { redeem, type StoreVerifier } from './iap';
+import { BazaarVerifier, redeem, type StoreVerifier } from './iap';
 import { act, loadProfile, me } from './game';
 import { RateLimiter } from './ratelimit';
 import type { SmsProvider } from './sms';
@@ -151,8 +151,21 @@ export function buildApp(o: AppOptions) {
     const id = player(req),
       b = parse(IapRequestSchema, req.body);
     if (!c.limit.take('iap:' + id, 20, 60_000)) throw new AuthError('rateLimited');
-    const r = await redeem(c, id, b.store, b.product, b.token);
+    const r = await redeem(
+      c,
+      id,
+      b.store,
+      b.product,
+      b.token,
+      b.json && b.sig ? { json: b.json, sig: b.sig } : undefined,
+    );
     return { ok: true, ...r, profile: loadProfile(c, id) };
+  });
+  // Setup check for the store keys (no secrets in the answer): rsa key loaded, API answer status.
+  app.get('/v1/iap/check', async (req) => {
+    if (!c.limit.take('iapcheck:' + req.ip, 10, 60_000)) throw new AuthError('rateLimited');
+    const v = c.stores.bazaar;
+    return { bazaar: v && 'probe' in v ? await (v as BazaarVerifier).probe() : 'off' };
   });
   app.post('/v1/events', async (req) => {
     const id = player(req),

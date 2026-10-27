@@ -128,6 +128,9 @@ public class StorePlugin extends Plugin {
         JSObject o = new JSObject();
         o.put("product", p.getProductId());
         o.put("token", p.getPurchaseToken());
+        // Signed purchase data: the server checks Bazaar's signature with the app's RSA key.
+        o.put("json", p.getOriginalJson());
+        o.put("sig", p.getDataSignature());
         return o;
     }
 
