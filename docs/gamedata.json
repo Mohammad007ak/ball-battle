@@ -830,7 +830,7 @@
   4
  ],
  "GEM_PACKS": [
-  { "id": "gems_80", "gems": 80, "toman": 15000 },
+  { "id": "gems_80", "gems": 80, "toman": 1000 },
   { "id": "gems_500", "gems": 500, "toman": 79000 },
   { "id": "gems_1200", "gems": 1200, "toman": 169000 }
  ],
