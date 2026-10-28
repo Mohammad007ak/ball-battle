@@ -4,6 +4,7 @@ import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { KeepAwake } from '@capacitor-community/keep-awake';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { StatusBar } from '@capacitor/status-bar';
+import { askNotify } from './notify';
 
 /** Phone features used by the legacy UI through `CK.N`. Every call is a no-op in a browser. */
 export interface Native {
@@ -18,6 +19,8 @@ export interface Native {
   /** App goes to background (`false`) or comes back (`true`). */
   onActive(fn: (active: boolean) => void): void;
   hideSplash(): void;
+  /** Ask for notification permission (first chest unlock). */
+  askNotify(): void;
 }
 
 const on = Capacitor.isNativePlatform();
@@ -47,6 +50,7 @@ export const native: Native = {
     if (on) quiet(App.addListener('appStateChange', (s) => fn(s.isActive)));
     else document.addEventListener('visibilitychange', () => fn(!document.hidden));
   },
+  askNotify,
   hideSplash() {
     if (!on) return;
     quiet(StatusBar.setOverlaysWebView({ overlay: true }));
