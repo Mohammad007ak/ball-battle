@@ -25,8 +25,19 @@ describe('admin dashboard', () => {
     expect((await app.inject({ url: '/admin/stats' })).statusCode).toBe(401);
     expect((await app.inject({ url: '/admin/stats?key=wrong' })).statusCode).toBe(401);
     const s = (await app.inject({ url: '/admin/stats?key=' + 'k'.repeat(20) })).json();
-    expect(s).toMatchObject({ players: 2, matches: 2 });
+    expect(s).toMatchObject({
+      players: 2,
+      matches: 2,
+      byMode: { bot: 2 },
+      purchases: { count: 0 },
+    });
+    expect(s.days).toHaveLength(14);
+    expect(s.config.gemPacks.find((p: { id: string }) => p.id === 'gems_80').toman).toBe(15000);
     expect(s.list[0]).toMatchObject({ id: ids[0], matches: 2 });
     expect(s.list[1].matches).toBe(0);
+    const f = await app.inject({ url: '/admin/fonts/vazirmatn-arabic-400-normal.woff2' });
+    expect(f.statusCode).toBe(200);
+    expect(f.headers['content-type']).toBe('font/woff2');
+    expect((await app.inject({ url: '/admin/fonts/..%2Fsrc%2Fdb.ts' })).statusCode).toBe(400);
   });
 });

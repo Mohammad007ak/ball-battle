@@ -1,28 +1,53 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { AuthError } from './auth';
+import type { RemoteConfig } from './config';
 import type { DB } from './db';
+import { PAGE } from './admin-page';
 
 export interface PlayerStat {
   id: string;
   linked: boolean;
   trophies: number;
+  wins: number;
+  coins: number;
+  gems: number;
   matches: number;
   createdAt: number;
   lastMatchAt: number | null;
 }
 
+export interface Day {
+  /** Start of the day in Asia/Tehran (UTC+3:30, no DST since 1401), as epoch ms. */
+  day: number;
+  signups: number;
+  matches: number;
+  active: number;
+}
+
 export interface Stats {
   players: number;
   linked: number;
-  /** Players with a finished match in the last 24 hours. */
+  /** Players with a finished match in the last 24 hours / 7 days. */
   active24h: number;
+  active7d: number;
   matches: number;
+  matches24h: number;
+  byMode: Record<string, number>;
+  purchases: { count: number; gems: number; toman: number; byProduct: Record<string, number> };
+  errors24h: number;
+  /** Gem packs as the server serves them now (remote config applied). */
+  config: { version: number; gemPacks: { id: string; gems: number; toman: number }[] };
+  days: Day[];
   list: PlayerStat[];
 }
 
-/** Player and match counts for the admin dashboard (deleted accounts excluded). */
-export function stats(db: DB, now: number): Stats {
+const DAY = 86_400_000,
+  TEHRAN = 3.5 * 3_600_000;
+const dayOf = (t: number) => Math.floor((t + TEHRAN) / DAY) * DAY - TEHRAN;
+
+function players(db: DB): PlayerStat[] {
   const rows = db
     .prepare(
       `select p.id, p.phone_hash, p.profile, p.created_at,
@@ -41,20 +66,89 @@ export function stats(db: DB, now: number): Stats {
     matches: number;
     last: number | null;
   }[];
-  const list = rows.map((r) => ({
-    id: r.id,
-    linked: r.phone_hash !== null,
-    trophies: Number((JSON.parse(r.profile) as { trophies?: number }).trophies ?? 0),
-    matches: r.matches,
-    createdAt: r.created_at,
-    lastMatchAt: r.last,
+  return rows.map((r) => {
+    const p = JSON.parse(r.profile) as Partial<
+      Record<'trophies' | 'wins' | 'coins' | 'gems', number>
+    >;
+    return {
+      id: r.id,
+      linked: r.phone_hash !== null,
+      trophies: p.trophies ?? 0,
+      wins: p.wins ?? 0,
+      coins: p.coins ?? 0,
+      gems: p.gems ?? 0,
+      matches: r.matches,
+      createdAt: r.created_at,
+      lastMatchAt: r.last,
+    };
+  });
+}
+
+/** Last 14 Tehran days, oldest first. */
+function days(db: DB, list: PlayerStat[], now: number): Day[] {
+  const first = dayOf(now) - 13 * DAY;
+  const out = Array.from({ length: 14 }, (_, i) => ({
+    day: first + i * DAY,
+    signups: 0,
+    matches: 0,
+    active: 0,
   }));
+  const at = (t: number) => out[Math.floor((dayOf(t) - first) / DAY)];
+  for (const p of list) if (p.createdAt >= first) at(p.createdAt)!.signups++;
+  const ms = db
+    .prepare('select player_id, finished_at from matches where finished_at >= ?')
+    .all(first) as { player_id: string; finished_at: number }[];
+  const seen = new Set<string>();
+  for (const m of ms) {
+    const d = at(m.finished_at);
+    if (!d) continue;
+    d.matches++;
+    const k = d.day + ':' + m.player_id;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    d.active++;
+  }
+  return out;
+}
+
+const count = (db: DB, sql: string, ...a: number[]) =>
+  (db.prepare(sql).get(...a) as { n: number }).n;
+
+/** Dashboard numbers (deleted accounts excluded). */
+export function stats(db: DB, config: RemoteConfig, now: number): Stats {
+  const list = players(db);
+  const since = (ms: number) =>
+    list.filter((p) => p.lastMatchAt !== null && now - p.lastMatchAt < ms).length;
+  const byMode: Record<string, number> = {};
+  for (const r of db
+    .prepare('select mode, count(*) as n from matches where finished_at is not null group by mode')
+    .all() as { mode: string; n: number }[])
+    byMode[r.mode] = r.n;
+  const gemPacks = config
+    .get()
+    .game.GEM_PACKS.map((p) => ({ id: p.id, gems: p.gems, toman: p.toman }));
+  const price = new Map(gemPacks.map((p) => [p.id, p.toman]));
+  const purchases = { count: 0, gems: 0, toman: 0, byProduct: {} as Record<string, number> };
+  for (const r of db
+    .prepare('select product, count(*) as n, sum(gems) as g from purchases group by product')
+    .all() as { product: string; n: number; g: number }[]) {
+    purchases.count += r.n;
+    purchases.gems += r.g;
+    purchases.toman += r.n * (price.get(r.product) ?? 0);
+    purchases.byProduct[r.product] = r.n;
+  }
   return {
     players: list.length,
     linked: list.filter((p) => p.linked).length,
-    active24h: list.filter((p) => p.lastMatchAt !== null && now - p.lastMatchAt < 86_400_000)
-      .length,
+    active24h: since(DAY),
+    active7d: since(7 * DAY),
     matches: list.reduce((s, p) => s + p.matches, 0),
+    matches24h: count(db, 'select count(*) as n from matches where finished_at >= ?', now - DAY),
+    byMode,
+    purchases,
+    errors24h: count(db, 'select count(*) as n from errors where at >= ?', now - DAY),
+    config: { version: config.version, gemPacks },
+    days: days(db, list, now),
     list,
   };
 }
@@ -69,45 +163,28 @@ function allowed(token: string | undefined, req: FastifyRequest): boolean {
   return !!given && timingSafeEqual(hash(given), hash(token));
 }
 
-const PAGE = `<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>داشبورد چکاچک</title>
-<style>
-:root{--bg:#f8fafc;--card:#fff;--fg:#1e293b;--mute:#64748b;--line:#e2e8f0;--acc:#4f46e5}
-@media (prefers-color-scheme:dark){:root{--bg:#0f172a;--card:#1e293b;--fg:#e2e8f0;--mute:#94a3b8;--line:#334155;--acc:#818cf8}}
-body{font-family:Vazirmatn,Tahoma,sans-serif;margin:0;padding:16px;background:var(--bg);color:var(--fg)}
-main{max-width:900px;margin:0 auto}h1{font-size:1.3em}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:16px 0}
-.k{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
-.k b{display:block;font-size:1.8em;color:var(--acc)}.k span{color:var(--mute);font-size:.9em}
-.wrap{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:12px}
-table{width:100%;border-collapse:collapse;font-size:.92em}th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
-th{color:var(--mute);font-weight:normal}td.n{font-variant-numeric:tabular-nums}code{font-size:.85em}
-#err{color:#dc2626}small{color:var(--mute)}
-</style></head><body><main>
-<h1>داشبورد چکاچک</h1><small id="at"></small><p id="err"></p>
-<div class="kpis" id="kpis"></div>
-<div class="wrap"><table><thead><tr><th>بازیکن</th><th>بازی‌ها</th><th>جام</th><th>شماره</th><th>ثبت‌نام</th><th>آخرین بازی</th></tr></thead><tbody id="rows"></tbody></table></div>
-</main><script>
-const fa=n=>Number(n).toLocaleString('fa-IR');
-const day=t=>t?new Date(t).toLocaleString('fa-IR',{timeZone:'Asia/Tehran',dateStyle:'short',timeStyle:'short'}):'—';
-const key=new URLSearchParams(location.search).get('key')||'';
-async function load(){
-  const r=await fetch('/admin/stats',{headers:{authorization:'Bearer '+key}});
-  if(!r.ok){document.getElementById('err').textContent='دسترسی ندارید (کلید را با ?key= بدهید).';return}
-  const s=await r.json();
-  document.getElementById('kpis').innerHTML=[['بازیکنان',s.players],['با شماره',s.linked],['فعال ۲۴ ساعت',s.active24h],['کل بازی‌ها',s.matches]]
-    .map(([l,v])=>'<div class="k"><b>'+fa(v)+'</b><span>'+l+'</span></div>').join('');
-  document.getElementById('rows').innerHTML=s.list.map(p=>'<tr><td><code>'+p.id.slice(0,8)+'</code></td><td class="n">'+fa(p.matches)+
-    '</td><td class="n">'+fa(p.trophies)+'</td><td>'+(p.linked?'✓':'—')+'</td><td>'+day(p.createdAt)+'</td><td>'+day(p.lastMatchAt)+'</td></tr>').join('');
-  document.getElementById('at').textContent='به‌روزرسانی: '+day(Date.now());
-}
-load();setInterval(load,30000);
-</script></body></html>`;
-
-export function adminRoutes(app: FastifyInstance, db: DB, now: () => number, token?: string) {
+export function adminRoutes(
+  app: FastifyInstance,
+  db: DB,
+  config: RemoteConfig,
+  now: () => number,
+  token?: string,
+) {
   app.get('/admin', async (_req, reply) => reply.type('text/html; charset=utf-8').send(PAGE));
+  // Vazirmatn served from here, never from a font CDN (CLAUDE.md rule 8).
+  const fonts = new Map<string, Buffer>();
+  app.get('/admin/fonts/:file', async (req, reply) => {
+    const f = (req.params as { file: string }).file;
+    if (!/^vazirmatn-(arabic|latin)-(400|700)-normal\.woff2$/.test(f))
+      throw new AuthError('badRequest');
+    if (!fonts.has(f)) fonts.set(f, readFileSync(new URL('../assets/' + f, import.meta.url)));
+    return reply
+      .type('font/woff2')
+      .header('cache-control', 'public, max-age=31536000, immutable')
+      .send(fonts.get(f));
+  });
   app.get('/admin/stats', async (req) => {
     if (!allowed(token, req)) throw new AuthError('unauthorized');
-    return stats(db, now());
+    return stats(db, config, now());
   });
 }
