@@ -44,7 +44,9 @@ function drawEmote(c,t,x,y,s,k,sk,time){
 }
 const EICON={};
 function emoteIcon(t,k,sk){const key=t+'|'+k+'|'+sk;if(EICON[key]==null){const cv2=document.createElement('canvas');cv2.width=cv2.height=120;drawEmote(cv2.getContext('2d'),t,56,66,84,k,sk,0.35);try{EICON[key]=cv2.toDataURL('image/png')}catch(e){EICON[key]=''}}return EICON[key]}
-function emoteChar(side){const f=G.f.length?sideF(side):null;if(f)return [f.cls,f.skin||''];const e=(G.teams[side].find(q=>q.alive)||G.teams[side][0]);return [e.cls,e.skin||'']}
+function emoteChar(side){const f=G.f.length?sideF(side):null;if(f)return [f.cls,f.skin||''];const e=(G.teams[side].find(q=>q.alive)||G.teams[side][0]);if(e)return [e.cls,e.skin||''];
+  // Online matchmaking: no roster yet, so my emotes use my lead character.
+  const k=S.team[0];return [k,S.skin[k]||'']}
 function sendEmote(side,t){if(!G)return;sfx('emote');G.emo=(G.emo||[]).filter(e=>e.side!==side);G.emo.push({side,t,life:2.6})}
 function drawEmotes(){
   for(const e of (G.emo||[])){
