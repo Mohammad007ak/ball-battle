@@ -12,6 +12,7 @@ import { HttpBackend } from './net/http-backend';
 import { GemStore } from './net/store';
 import { LocalBackend } from './net/local-backend';
 import { native } from './native';
+import { plan, syncNotify } from './notify';
 import { Telemetry } from './telemetry';
 
 /** VITE_API_URL set → the real server; unset → offline fake server (development, with test tools). */
@@ -51,10 +52,19 @@ const iap = new GemStore(http);
 await iap.init();
 const CK = makeBridge(backend, balance, art, telemetry, iap);
 (globalThis as unknown as { CK: unknown }).CK = CK;
+const notifyPlan = () =>
+  plan(
+    backend.profile().slots,
+    balance.game.CHESTS.map((c) => c.name),
+    backend.now(),
+    backend.now() - Date.now(),
+  );
 native.onActive((active) => {
   if (active) telemetry.track('session_start', { app: __APP_VERSION__ });
   else void telemetry.flush();
+  void syncNotify(!active, notifyPlan);
 });
+void syncNotify(false, notifyPlan);
 telemetry.track('session_start', { app: __APP_VERSION__ });
 // The prototype-ported UI, concatenated into one module by vite.config.ts.
 bootProgress(0.85, 'آماده‌سازی میدان…');

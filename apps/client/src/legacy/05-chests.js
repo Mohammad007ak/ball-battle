@@ -54,7 +54,7 @@ async function slotTap(i){
   const s=S.slots[i],st=slotState(s);
   if(st==='locked'){
     if(S.slots.some(x=>slotState(x)==='unlocking')){toast('هم‌زمان فقط یک صندوقچه باز می‌شود');return}
-    if(await act({t:'unlock',slot:i}))renderSlots();
+    if(await act({t:'unlock',slot:i})){renderSlots();CK.N.askNotify()}
   }else if(st==='unlocking'){
     const c=skipCost(s);
     if(S.gems<c){toast(`${fa(c)} الماس لازم است`);return}
