@@ -1,9 +1,15 @@
 import { describe, expect, it } from 'vitest';
+import { PAGE } from './admin-page';
 import { buildApp } from './app';
 import { openDb } from './db';
 import { ConsoleSms } from './sms';
 
 describe('admin dashboard', () => {
+  it('page script is valid JavaScript', () => {
+    const js = /<script>([\s\S]*)<\/script>/.exec(PAGE)![1]!;
+    expect(() => new Function(js)).not.toThrow();
+  });
+
   it('counts players and their finished matches, only with the admin token', async () => {
     const db = openDb(':memory:');
     const { app } = buildApp({
@@ -35,6 +41,7 @@ describe('admin dashboard', () => {
     expect(s.config.gemPacks.find((p: { id: string }) => p.id === 'gems_80').toman).toBe(15000);
     expect(s.list[0]).toMatchObject({ id: ids[0], matches: 2 });
     expect(s.list[1].matches).toBe(0);
+    expect(s.errors).toEqual([]);
     const f = await app.inject({ url: '/admin/fonts/vazirmatn-arabic-400-normal.woff2' });
     expect(f.statusCode).toBe(200);
     expect(f.headers['content-type']).toBe('font/woff2');
