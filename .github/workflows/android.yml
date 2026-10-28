@@ -23,6 +23,8 @@ jobs:
   bazaar:
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    # The signing secrets live in this GitHub Environment (Settings → Environments).
+    environment: ANDROID_KEYSTORE_BASE64
     env:
       VITE_API_URL: ${{ vars.VITE_API_URL || 'https://chakachak.darkube.ir' }}
     steps:
