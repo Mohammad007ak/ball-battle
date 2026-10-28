@@ -105,7 +105,7 @@ export function buildApp(o: AppOptions) {
   });
   app.get('/health', async () => ({ ok: true }));
   privacyRoutes(app);
-  adminRoutes(app, c.db, now, o.adminToken);
+  adminRoutes(app, c.db, c.config, now, o.adminToken);
   // Phone linking is offered only when codes can actually be delivered (a real SMS provider).
   const phoneLogin = c.sms.real || !!c.testOtp;
   app.get('/v1/config', async () => ({
