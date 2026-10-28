@@ -26,6 +26,7 @@ const { app, ctx } = buildApp({
   secret,
   dev,
   stores: bazaar ? { bazaar } : {},
+  ...(env.ADMIN_TOKEN ? { adminToken: env.ADMIN_TOKEN } : {}),
   ...(env.SMS_PROVIDER !== 'kavenegar' && env.TEST_OTP ? { testOtp: env.TEST_OTP } : {}),
 });
 attachOnline(ctx, app.server);

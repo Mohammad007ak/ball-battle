@@ -20,6 +20,7 @@ import {
 } from './auth';
 import { RemoteConfig } from './config';
 import { privacyRoutes } from './privacy';
+import { adminRoutes } from './admin';
 import type { DB } from './db';
 import { BazaarVerifier, redeem, type StoreVerifier } from './iap';
 import { act, loadProfile, me } from './game';
@@ -50,6 +51,8 @@ export interface AppOptions {
   dev?: boolean;
   testOtp?: string;
   stores?: Record<string, StoreVerifier>;
+  /** ADMIN_TOKEN for the /admin dashboard; unset = dashboard locked. */
+  adminToken?: string;
 }
 
 const STATUS: Record<string, number> = {
@@ -102,6 +105,7 @@ export function buildApp(o: AppOptions) {
   });
   app.get('/health', async () => ({ ok: true }));
   privacyRoutes(app);
+  adminRoutes(app, c.db, now, o.adminToken);
   // Phone linking is offered only when codes can actually be delivered (a real SMS provider).
   const phoneLogin = c.sms.real || !!c.testOtp;
   app.get('/v1/config', async () => ({
