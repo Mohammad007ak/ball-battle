@@ -23,6 +23,8 @@ jobs:
   bazaar:
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    # The signing secrets live in this GitHub Environment (Settings → Environments).
+    environment: ANDROID_KEYSTORE_BASE64
     env:
       VITE_API_URL: ${{ vars.VITE_API_URL || 'https://chakachak.darkube.ir' }}
     steps:
@@ -43,20 +45,34 @@ jobs:
       - name: Keystore from secrets
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
+          # Pasted secrets often carry spaces or line breaks: strip them.
+          trim() { printf %s "$1" | tr -d '\r\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'; }
           if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
-            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/chakachak.jks"
+            printf %s "$ANDROID_KEYSTORE_BASE64" | tr -d ' \r\n\t' | base64 -d > "$RUNNER_TEMP/chakachak.jks"
             echo "KEYSTORE_FILE=$RUNNER_TEMP/chakachak.jks" >> "$GITHUB_ENV"
+            SP=$(trim "$ANDROID_KEYSTORE_PASSWORD"); KA=$(trim "$ANDROID_KEY_ALIAS"); KP=$(trim "$ANDROID_KEY_PASSWORD")
+            [ -n "$KP" ] || KP="$SP"
+            for v in SP KA KP; do echo "::add-mask::${!v}"; done
+            { echo "KEYSTORE_PASSWORD=$SP"; echo "KEY_ALIAS=$KA"; echo "KEY_PASSWORD=$KP"; } >> "$GITHUB_ENV"
+            # Diagnostics without revealing secrets.
+            echo "keystore file: $(wc -c < "$RUNNER_TEMP/chakachak.jks") bytes, sha256 $(sha256sum "$RUNNER_TEMP/chakachak.jks" | cut -c1-16)"
+            echo "store password: ${#SP} chars, alias: ${#KA} chars, key password: ${#KP} chars"
+            if keytool -list -keystore "$RUNNER_TEMP/chakachak.jks" -storepass "$SP" -alias "$KA" > /dev/null 2>&1; then
+              echo "keystore, password and alias: OK"
+            else
+              echo "::error::Keystore check failed: ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD or ANDROID_KEY_ALIAS is wrong (see sizes above)"
+              exit 1
+            fi
           fi
           echo "VERSION_CODE=$((GITHUB_RUN_NUMBER + 5))" >> "$GITHUB_ENV"
           echo "VERSION_NAME=$(node -p "require('./apps/client/package.json').version")" >> "$GITHUB_ENV"
 
       - name: Build
         working-directory: apps/client/android
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           mkdir -p "$GITHUB_WORKSPACE/out"
           if [ -n "$KEYSTORE_FILE" ]; then
