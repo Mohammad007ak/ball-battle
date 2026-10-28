@@ -9,7 +9,8 @@ name: Android
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    # The repository default branch (there is no `main`).
+    branches: [main, claude/eager-babbage-7fp06u]
     paths:
       - "apps/client/**"
       - "packages/**"
