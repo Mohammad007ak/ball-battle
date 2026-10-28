@@ -37,6 +37,18 @@ export interface Stats {
   byMode: Record<string, number>;
   purchases: { count: number; gems: number; toman: number; byProduct: Record<string, number> };
   errors24h: number;
+  /** Last 7 days of client error reports, grouped by message, most frequent first. */
+  errors: {
+    kind: string;
+    message: string;
+    source: string | null;
+    stack: string | null;
+    n: number;
+    players: number;
+    apps: string;
+    device: string | null;
+    last: number;
+  }[];
   /** Gem packs as the server serves them now (remote config applied). */
   config: { version: number; gemPacks: { id: string; gems: number; toman: number }[] };
   days: Day[];
@@ -147,6 +159,15 @@ export function stats(db: DB, config: RemoteConfig, now: number): Stats {
     byMode,
     purchases,
     errors24h: count(db, 'select count(*) as n from errors where at >= ?', now - DAY),
+    errors: db
+      .prepare(
+        `select kind, message, max(source) as source, max(stack) as stack, count(*) as n,
+                count(distinct player_id) as players, group_concat(distinct app) as apps,
+                max(device) as device, max(at) as last
+           from errors where at >= ?
+          group by kind, message order by n desc, last desc limit 30`,
+      )
+      .all(now - 7 * DAY) as Stats['errors'],
     config: { version: config.version, gemPacks },
     days: days(db, list, now),
     list,

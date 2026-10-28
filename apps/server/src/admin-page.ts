@@ -23,6 +23,7 @@ table{width:100%;border-collapse:collapse;font-size:.9em}th,td{padding:8px 10px;
 th{color:var(--mute);font-weight:normal;cursor:pointer}td.n{font-variant-numeric:tabular-nums}code{font-size:.85em}
 .row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line)}.row:last-child{border:0}
 #err{color:var(--bad)}small{color:var(--mute)}.bad{color:var(--bad)}
+details{border-bottom:1px solid var(--line);padding:8px 0}details:last-child{border:0}summary{cursor:pointer;display:flex;gap:10px;justify-content:space-between}summary span{overflow:hidden;text-overflow:ellipsis;direction:ltr;text-align:left;font-family:monospace;font-size:.85em}pre{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-all;font-size:.75em;color:var(--mute);margin:8px 0 0}
 </style></head><body><main>
 <h1>داشبورد چکاچک</h1><small id="at"></small><p id="err"></p>
 <div class="kpis" id="kpis"></div>
@@ -33,6 +34,7 @@ th{color:var(--mute);font-weight:normal;cursor:pointer}td.n{font-variant-numeric
 <div class="card"><h2>نوع بازی</h2><div id="modes"></div><h2 style="margin-top:14px">قیمت بسته‌های الماس روی سرور</h2><div id="packs"></div></div>
 </div>
 <div class="card wrap"><table><thead><tr><th data-k="id">بازیکن</th><th data-k="matches">بازی‌ها</th><th data-k="wins">برد</th><th data-k="rate">درصد برد</th><th data-k="trophies">جام</th><th data-k="coins">سکه</th><th data-k="gems">الماس</th><th data-k="linked">شماره</th><th data-k="createdAt">ثبت‌نام</th><th data-k="lastMatchAt">آخرین بازی</th></tr></thead><tbody id="rows"></tbody></table></div>
+<div class="card" style="margin-top:12px"><h2>خطاهای ۷ روز اخیر (خطاهای یکسان با هم)</h2><div id="errs"></div></div>
 </main><script>
 const $=id=>document.getElementById(id),fa=n=>Number(n).toLocaleString('fa-IR');
 const when=t=>t?new Date(t).toLocaleString('fa-IR',{timeZone:'Asia/Tehran',dateStyle:'short',timeStyle:'short'}):'—';
@@ -60,6 +62,9 @@ async function load(){
   $('modes').innerHTML=Object.entries(S.byMode).map(([m,n])=>'<div class="row"><span>'+(MODES[m]||m)+'</span><b>'+fa(n)+'</b></div>').join('')||'<small>هنوز بازی‌ای نیست</small>';
   $('packs').innerHTML=S.config.gemPacks.map(p=>'<div class="row"><span>'+fa(p.gems)+' الماس — <b>'+fa(p.toman)+' تومان</b></span><small>'+fa(P.byProduct[p.id]||0)+' خرید</small></div>').join('')+
    '<small>نسخهٔ تنظیمات از راه دور: '+fa(S.config.version)+(S.config.version?' (بالانس پیش‌فرض را بازنویسی کرده)':' (پیش‌فرض)')+'</small>';
+  const KIND={error:'خطای کد',rejection:'کار ناتمام',native:'کرش اندروید'},esc=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  $('errs').innerHTML=S.errors.map(e=>'<details><summary><b class="bad">'+fa(e.n)+'×</b><small>'+(KIND[e.kind]||esc(e.kind))+(e.source==='startup'?' · موقع باز شدن':'')+'</small><span>'+esc(e.message)+'</span></summary><pre>'+
+    esc('players: '+e.players+'   app: '+e.apps+'   last: '+when(e.last)+'\\nsource: '+(e.source||'-')+'\\ndevice: '+(e.device||'-')+'\\n\\n'+(e.stack||''))+'</pre></details>').join('')||'<small>خطایی نیست 🎉</small>';
   table();$('at').textContent='به‌روزرسانی: '+when(Date.now());
 }
 load();setInterval(load,30000);
